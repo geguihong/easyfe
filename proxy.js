@@ -1,0 +1,21 @@
+var express = require('express');
+var request = require('request');
+var app = express();
+
+app.use(express.static('public'));
+
+app.get('/',function(req,res){
+    res.redirect('/admin.html');
+});
+
+app.all('/Web/*',function(req,res){
+    var url = 'http://121.42.37.233' + req.url;
+    req.pipe(request(url)).pipe(res);
+});
+
+var server = app.listen(3000, function () {
+  var host = server.address().address;
+  var port = server.address().port;
+
+  console.log('Example app listening at http://%s:%s', host, port);
+});
