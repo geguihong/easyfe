@@ -824,7 +824,7 @@ App.prototype={
                         '<p><strong>底部文字</strong></p>'+
                         '<p>'+data.data.specialText.bottomText+'</p>'+
                         '<p><strong>侧边栏底部文字</strong></p>'+
-                        '<p>'+data.data.sidebarBottomText+'</p>';
+                        '<p>'+data.data.sidebarBottomText.replace(/\n/g,'<br />')+'</p>';
                 
                         $('#app-cont').html(dom);
                     }else{
@@ -841,6 +841,10 @@ App.prototype={
                 
                 for(var i in route_info.modify_map){
                     var modify_item = route_info.modify_map[i];
+                    if(modify_item.name == "侧边栏底部文字"){
+                        dom+='<div class="form-group"><label>'+modify_item.name+'</label><textarea rows="3" class="form-control" name="'+modify_item.key+'"></textarea></div>';
+                        continue;
+                    }
                     dom+='<div class="form-group"><label>'+modify_item.name+'</label><input class="form-control" name="'+modify_item.key+'" type="text" /></div>';
                 }
                 
