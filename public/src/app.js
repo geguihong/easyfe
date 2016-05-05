@@ -401,7 +401,27 @@ function App(){
     },{
         bread:['在线参数管理','查看在线参数'],
         cont:'page',
-        url:'/OnlineParams?'
+        url:'/OnlineParams?',
+    },{
+        bread:['在线参数管理','修改在线参数'],
+        cont:'modify',
+        url:'/OnlineParams',
+        modify_map:[{
+            key:'data.specialText.line1',
+            name:'标题'
+        },{
+            key:'data.specialText.line2',
+            name:'副标题'
+        },{
+            key:'data.specialText.line3',
+            name:'正文'
+        },{
+            key:'data.specialText.bottomText',
+            name:'底部文字'
+        },{
+            key:'data.sidebarBottomText',
+            name:'侧边栏底部文字'
+        }]
     }];
     //>
     this.datas=null;
@@ -644,6 +664,7 @@ App.prototype={
                alert('请求失败！');
                $btn.button('reset');
             });
+            
         });
         
         //@btn-move 处理位置转移事件
@@ -676,6 +697,60 @@ App.prototype={
                     $('#app-modal-cont').html('执行成功，请关闭此窗口');
                 }else{
                     alert('执行失败！');
+                }
+                $btn.button('reset');
+            }).fail(function(data, status, jqXHR){
+               alert('请求失败！');
+               $btn.button('reset');
+            });
+        });
+        
+        //@btn-modify
+        $('body').on('click','[data-class="btn-modify"]',function(){
+            var $btn = $(this).button('loading');
+        
+            function trim(str){
+                return str.replace(/(^\s*)|(\s*$)/g, "");
+            }
+            var paras = $(this).parent().serializeArray();
+            var tmp = {};
+            for(var i in paras){
+                var ele = paras[i];
+                
+                if(trim(ele.value).length != 0){
+                    var name_arr = ele.name.split(".");
+                    
+                    var cur = tmp;
+                    for(var j in name_arr){
+                        if( j == name_arr.length-1){
+                            cur[name_arr[j]] = ele.value;
+                        }else{
+                            if(cur[name_arr[j]] == undefined){
+                                cur[name_arr[j]] = {};
+                                cur = cur[name_arr[j]];
+                            }else{
+                                cur = cur[name_arr[j]];
+                            }
+                        }
+                    }
+                }
+            }
+            
+            tmp.token=window.tmptoken;
+            var url=$(this).parent().attr('data-url');
+            
+            $.ajax({
+                url: window.rootUrl+url,
+                dataType: 'json',
+                data:JSON.stringify(tmp),
+                type:'POST',
+                contentType: "application/json; charset=utf-8"
+            }).done(function(data, status, jqXHR){
+                
+                if(data.result=='success'){
+                    alert('发送成功');
+                }else{
+                    alert('发送失败！');
                 }
                 $btn.button('reset');
             }).fail(function(data, status, jqXHR){
@@ -743,11 +818,13 @@ App.prototype={
                         var dom='<p><strong>标题</strong></p>'+
                         '<p>'+data.data.specialText.line1+'</p>'+
                         '<p><strong>副标题</strong></p>'+
-                        '<p>'+data.data.specialText.line1+'</p>'+
+                        '<p>'+data.data.specialText.line2+'</p>'+
                         '<p><strong>正文</strong></p>'+
-                        '<p>'+data.data.specialText.line1+'</p>'+
+                        '<p>'+data.data.specialText.line3+'</p>'+
                         '<p><strong>底部文字</strong></p>'+
-                        '<p>'+data.data.specialText.line1+'</p>';
+                        '<p>'+data.data.specialText.bottomText+'</p>'+
+                        '<p><strong>侧边栏底部文字</strong></p>'+
+                        '<p>'+data.data.sidebarBottomText+'</p>';
                 
                         $('#app-cont').html(dom);
                     }else{
@@ -757,6 +834,19 @@ App.prototype={
                 }).fail(function(data, status, jqXHR){
                     alert('请求失败！');
                 });
+                break;
+                //Modify
+                case 'modify':
+                var dom='<form onSubmit="return false" data-url="'+route_info.url+'">';
+                
+                for(var i in route_info.modify_map){
+                    var modify_item = route_info.modify_map[i];
+                    dom+='<div class="form-group"><label>'+modify_item.name+'</label><input class="form-control" name="'+modify_item.key+'" type="text" /></div>';
+                }
+                
+                dom+='<button type="submit" class="btn btn-default" data-class="btn-modify">提交修改</button></form>';
+                
+                $('#app-cont').html(dom);
                 break;
             }
         });
