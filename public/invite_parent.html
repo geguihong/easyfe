@@ -1,0 +1,64 @@
+
+<!DOCTYPE html>
+<html lang="zh_cn">
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <title>优升学教育 家教新用户尊享</title>
+
+        <link href="/style/main.css" rel="stylesheet">
+    </head>
+    <body>
+        <div class="ct">
+            <img class="icon" src="/slices/iconv1d4.png">
+        </div>
+        <div class="ct">
+            <img class="head" src="/slices/领取优惠券.png">
+        </div>
+        <div class="m25"></div>
+            <p class="cont">现在注册，马上领取 <span class="big">600元现金券</span></p>
+            <p class="cont">优生学家教</p>
+            <p class="cont">我们致力于实实在在提高您孩子的成绩</p>
+            <p class="cont">全名校大学生家教！</p>
+            <p class="cont">一起一对一辅导的还有</p>
+            <p class="cont">熟知考点的专业老师</p>
+            <p class="cont">免任何手续费中介费</p>
+        <div class="m25"></div>
+            <form onsubmit="return false;">
+                <div class="ct">
+                    <input name="type" type="hidden" value="0">
+                    <input name="phone" type="text" placeholder="请输入手机号" maxlength="11" onkeyup="this.value=this.value.replace(/\D/g,'')" />
+                </div>
+                <div class="m15"></div>
+                <input id="invite-button" class="button" type="submit" value="领取优惠券" />
+            </form>
+        <div class="m25"></div>
+        <div class="ct">
+            <a href="#">下载 优升学教育 APP</a>
+        </div>
+        <div class="m15"></div>
+        <div class="ct">
+            <a href="javascript:void(0);" id="show-button">活动说明</a>
+        </div>
+        <div class="m25"></div>
+        
+        <div class="panel" id="toggle-panel">
+            <p class="detail-title" id="hide-button">
+                ▼
+            </p>
+            <p class="detail-title">
+                活动说明
+            </p>
+            <p class="detail">
+                1. 新用户注册家长并登录APP即获得价值600元现金券；
+            </p>
+            <p class="detail">
+                2. 优升学教育对该活动保持最终解释权。
+            </p>
+        </div>
+        
+        <script src="./jquery-2.2.1/jquery.min.js"></script>
+        <script src="./src/h5.js"></script>
+    </body>
+</html>

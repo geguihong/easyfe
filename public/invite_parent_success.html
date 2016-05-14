@@ -1,0 +1,73 @@
+
+<!DOCTYPE html>
+<html lang="zh_cn">
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <title>优升学教育 家教新用户尊享</title>
+
+        <link href="/style/main.css" rel="stylesheet">
+    </head>
+    <body>
+        <div class="ct">
+            <img class="icon" src="/slices/iconv1d4.png">
+        </div>
+        <div class="ct">
+            <img class="head" src="/slices/欢迎加入！.png">
+        </div>
+        <div class="m25"></div>
+            <p class="cont">价值 <span class="big">600元优惠券</span> 已存入</p>
+            <p class="cont">阁下 <span id="phone" class="yellow"></span> 账号中</p>
+            <p class="cont">赶紧下载APP！</p>
+            <p class="cont">感受专业的一对一家教辅导！</p>
+            <p class="cont">让专业的老师和优秀的家教帮助提高您孩子的成绩</p>
+            <p class="cont">Y^O^Y</p>
+        <div class="m25"></div>
+        <a class="button">下载 优升学教育 APP</a>
+        <div class="m25"></div>
+        <div class="ct">
+            <a href="javascript:void(0);" id="show-button">活动说明</a>
+        </div>
+        <div class="m25"></div>
+        
+        <div class="panel" id="toggle-panel">
+            <p class="detail-title" id="hide-button">
+                ▼
+            </p>
+            <p class="detail-title">
+                活动说明
+            </p>
+            <p class="detail">
+                1. 新用户注册家长并登录APP即获得价值600元现金券；
+            </p>
+            <p class="detail">
+                2. 优升学教育对该活动保持最终解释权。
+            </p>
+        </div>
+        
+        <script>
+            document.getElementById('show-button').addEventListener('click',function(){
+                document.getElementById('toggle-panel').setAttribute('style',"display:block;");
+            });
+            document.getElementById('hide-button').addEventListener('click',function(){
+                document.getElementById('toggle-panel').setAttribute('style',"display:none;");
+            });
+            
+            function GetRequest() {
+                var url = location.search; //获取url中"?"符后的字串
+                var theRequest = new Object();
+                if (url.indexOf("?") != -1) {
+                    var str = url.substr(1);
+                    strs = str.split("&");
+                    for(var i = 0; i < strs.length; i ++) {
+                        theRequest[strs[i].split("=")[0]] = unescape(strs[i].split("=")[1]);
+                    }
+                }
+                return theRequest;
+            }
+            
+            document.getElementById('phone').innerHTML = GetRequest()['phone'];
+        </script>
+    </body>
+</html>
