@@ -4,8 +4,8 @@ var app = express();
 
 app.use(express.static('public'));
 
-app.get('/',function(req,res){
-    res.redirect('/admin.html');
+app.get('/easyfe/admin/home',function(req,res){
+    res.sendFile('/hidden/admin.html',{ root: __dirname });
 });
 
 app.all('/Web/*',function(req,res){
