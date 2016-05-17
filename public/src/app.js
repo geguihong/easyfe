@@ -554,11 +554,6 @@ App.prototype={
                     '<p>'+tv.score+'</p>'+
                     '<p><strong>奖励</strong></p>'+
                     '<p>'+tv.rewards+'</p>'+
-                    '<p><strong>天使计划</strong></p>'+
-                    '<p>男孩：'+tv.angelPlan.boy+'</p>'+
-                    '<p>女孩：'+tv.angelPlan.girl+'</p>'+
-                    '<p>价格：'+tv.angelPlan.price+'</p>'+
-                    '<p>是否参加：'+(tv.angelPlan.join?'是':'否')+'</p>'+
                     '<p><strong>是否已锁定</strong></p>'+
                     '<p>'+(tv.isLock?'是':'否')+'</p>'+
                     '<p><strong>是否已审核</strong></p>'+
