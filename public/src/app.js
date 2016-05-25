@@ -248,13 +248,19 @@ var DirtyForm = Vue.extend({
         submit: function() {
             var tmp={};
             var data={};
+            var modified = false;
             for(var i=0;i!=this.form.length;i++){
                 if(this.form[i].default !== this.models[i]) {
                     data = Store.setter(data,this.form[i].from,this.models[i]);
+                    modified = true;
                 }
             }
             tmp.token = Store.token;
             tmp.data = data;
+            
+            if (!modified) {
+                return;
+            }
             
             var self = this;
             $.ajax({
@@ -265,6 +271,7 @@ var DirtyForm = Vue.extend({
                 contentType: "application/json; charset=utf-8"
             }).done(function(data, status, jqXHR){
                 if(data.result=='success'){
+                    location.reload();
                     alert('修改成功');
                 }else{
                     alert('修改失败');
@@ -278,6 +285,71 @@ var DirtyForm = Vue.extend({
     }
 })
 Vue.component('dirty-form',DirtyForm);
+
+//route:home 
+var PageHome = Vue.extend({
+    template:`<div class="container-fluid">
+                <div class="row">
+                    <!-- 侧边导航 -->
+                    <div class="col-xs-2 sidebar">
+                        <side-bar></side-bar>
+                    </div>
+
+                    <div class="col-xs-10 col-xs-offset-2 main">
+                        <router-view></router-view>
+                    </div>
+                </div>
+            </div>
+            
+            <modal></modal>`
+})
+
+//route:login
+var PageLogin = Vue.extend({
+    data: function() {
+        return {
+            account: '',
+            password: '',
+        }
+    },
+    methods:{
+        submit: function() {
+            var tmp = {
+                account: this.account,
+                password: $.md5(this.password),
+            }
+            
+            var self = this;
+            $.ajax({
+                url: Store.rootUrl+'/Manager/Login?account='+tmp.account+'&password='+tmp.password,
+                dataType: 'json',
+            }).done(function(data, status, jqXHR){
+                if(data.result=='success'){
+                    sessionStorage['token'] = data.data.token;
+                    Store.token = sessionStorage['token'];
+                    router.go('/');
+                    alert('登录成功');
+                }else{
+                    alert('登录失败');
+                }
+                self.submitLock = false;
+            }).fail(function(data, status, jqXHR){
+               alert('服务器请求超时');
+               self.submitLock = false;
+            });
+        }
+    },
+    template: `<div class="container">
+                    <form class="form-signin" onsubmit="return false;">
+                        <h2 class="form-signin-heading">请登录</h2>
+                        <label class="sr-only" for="inputEmail">管理员账号</label>
+                        <input v-model="account" class="form-control" id="inputEmail" autofocus="" required="" type="text" placeholder="请输入账号...">
+                        <label class="sr-only" for="inputPassword">密码</label>
+                        <input v-model="password" class="form-control" id="inputPassword" required="" type="password" placeholder="请输入密码...">
+                        <button class="btn btn-lg btn-primary btn-block" type="submit" v-on:click="submit()">登陆</button>
+                    </form>
+                </div>`,
+})
 
 //route:allUser
 var SectionAllUser = Vue.extend({
@@ -671,23 +743,31 @@ var SectionOnlineParams = Vue.extend({
 //路由
 var router = new VueRouter()
 router.map({
-    '/allUser': {
-        component: SectionAllUser
+    '/login': {
+        component: PageLogin,
     },
-    '/parent': {
-        component: SectionParent
-    },
-    '/order/:type_id': {
-        component: SectionOrder
-    },
-    '/sendMessage': {
-        component: SectionSendMessage
-    },
-    '/onlineParams': {
-        component: SectionOnlineParams
-    },
-    '/feedback/:type_id': {
-        component: SectionFeedback,
+    '/': {
+        component: PageHome,
+        subRoutes: {
+            '/allUser': {
+                component: SectionAllUser
+            },
+            '/parent': {
+                component: SectionParent
+            },
+            '/order/:type_id': {
+                component: SectionOrder
+            },
+            '/sendMessage': {
+                component: SectionSendMessage
+            },
+            '/onlineParams': {
+                component: SectionOnlineParams
+            },
+            '/feedback/:type_id': {
+                component: SectionFeedback,
+            },
+        }
     },
 })
 
@@ -695,7 +775,7 @@ router.map({
 var App = Vue.extend({})
 var Store = {
     rootUrl: '/Web',
-    token: 'c17ce70496d47c18',
+    token: '',
     modal: {
         header: [],
         datas: [],
@@ -858,5 +938,18 @@ var Store = {
         ]
      ]
 };
+
+router.beforeEach(function (transition) {
+  if (transition.to.path !== '/login') {
+    if (sessionStorage['token'] === undefined) {
+        router.go('/login');
+    } else {
+        Store.token = sessionStorage['token'];
+        transition.next();
+    }
+  } else {
+    transition.next()
+  }
+})
 
 router.start(App, '#app')
