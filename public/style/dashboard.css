@@ -77,10 +77,29 @@ body {
 
 img{
   border-radius:5px;
+  margin-bottom: 10px;
 }
 
+.bundle {
+  padding-top: 10px;
+}
+.bundle:hover {
+  background-color: lightblue;
+  border-radius: 10px;
+}
 
+.bundle>.left {
+  display: inline-block;
+  width: 20%;
+  margin-right: 5%;
+  text-align: right;
+  vertical-align: top;
+}
 
+.bundle>.right {
+  display: inline-block;
+  width: 70%;
+}
 
 /*登陆界面*/
 
