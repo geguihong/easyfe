@@ -119,7 +119,7 @@ var Modal = Vue.extend({
                             <h4 class="modal-title">详情</h4>
                         </div>
                         <div class="modal-body">
-                            <div v-for="item in datas" class="bundle" track-by="$index">
+                            <div v-if="$index > 0" v-for="item in datas" class="bundle" track-by="$index">
                                 <p class="left"><strong>{{header[$index].name}}</strong></p>
                                 <p class="right" v-if="header[$index].filter!=='img'">{{item}}</p>
                                 <img class="right" v-if="header[$index].filter==='img'" :src="item" />
@@ -134,15 +134,46 @@ Vue.component('modal', Modal);
 //Bookmark:动作行
 var ActionRow = Vue.extend({
     props:['postData','actions'],
-    template:'<tr><td><a v-for="action in actions" v-on:click="emit(action)">{{action}}</a></td><td v-for="cell in postData" track-by="$index">{{cell}}</td></tr>',
+    template:'<tr><td><a v-for="action in actions" v-on:click="emit(action)">{{action}}</a></td><td v-if="$index > 0" v-for="cell in postData" track-by="$index">{{cell}}</td></tr>',
     methods:{
+        check: function(url,para,id,isShow) {            
+            var tmp = {
+                token: Store.token,
+            };
+            tmp[para] = id;
+            if (isShow === 'show') {
+                tmp.isShow = true;
+            } else if (isShow === 'hide'){
+                tmp.isShow = false;
+            }
+            
+            $.ajax({
+                url: Store.rootUrl+url,
+                dataType: 'json',
+                data:JSON.stringify(tmp),
+                type:'POST',
+                contentType: "application/json; charset=utf-8"
+            }).done(function(data, status, jqXHR){
+                if(data.result=='success'){
+                    location.reload();
+                    alert('执行成功！');
+                }else{
+                    alert('执行失败！');
+                }
+            }).fail(function(data, status, jqXHR){
+               alert('服务器请求超时！');
+            });
+        },
         emit: function(event){
             switch(event) {
                 case '审核':
+                this.check('/Teacher/Check','teacherId',this.postData[0]);
                 break;
                 case '上线':
+                this.check('/Order/Discount/Check','orderId',this.postData[0],'show');
                 break;
                 case '下线':
+                this.check('/Order/Discount/Check','orderId',this.postData[0],"hide");
                 break;
                 case '查看':
                 Store.modal.datas = this.postData;
@@ -177,7 +208,7 @@ var PaginationTable = Vue.extend({
                 </form>
                 <div class="table-responsive">
                     <table class="table table-hover">
-                        <thead><tr><th>操作</th><th v-for="cell in header">{{cell.name}}</th></tr></thead>
+                        <thead><tr><th>操作</th><th v-if="$index > 0" v-for="cell in header">{{cell.name}}</th></tr></thead>
                         <tbody><tr is="action-row" v-for="item in pages[currentPage]" :post-data="item" :actions="actions"></tr></tbody>
                     </table>
                 </div>
@@ -451,6 +482,65 @@ var SectionParent = Vue.extend({
                 <div><pagination-table v-if="loaded" :post-datas="postDatas" :header="header" :actions="actions"></pagination-table></div>`
 })
 
+//route:teacher
+var SectionTeacher = Vue.extend({
+    route: {
+        canReuse: false
+    },
+    data: function() { 
+        var tmp={};
+        tmp.loaded = false;
+        tmp.header = Store.userHeader[0].concat(Store.userHeader[2]);
+        tmp.actions = ['查看'];
+        if (this.$route.params['type_id'] == 'checked'){
+            tmp.subtitle = '已审核家教';
+            this.reload(3);
+        } else if (this.$route.params['type_id'] == 'unchecked'){
+            tmp.subtitle = '未审核家教';
+            tmp.actions.push('审核');
+            this.reload(2);
+        }
+        return tmp;
+    },
+    methods: {
+        reload: function(type) {
+            var self = this;
+            $.ajax({
+                url:Store.rootUrl+'/User?type='+type+'&token='+Store.token,
+                dataType: 'json'
+            }).done(function(data, status, jqXHR){
+                if(data.result=="success"){
+                    self.postDatas = [];
+                        for(var i in data.data){
+                            var x = data.data[i];
+                            var postData = [];
+                            for(var j in self.header) {
+                                var str = Store.getter(x,self.header[j].from);
+                                if (str !== undefined ) {
+                                    if (self.header[j].filter) {
+                                        str = Store.filter(str,self.header[j].filter);
+                                    }
+                                } else {
+                                    str = '';
+                                }
+                                postData.push(str);
+                            }
+                            self.postDatas.push(postData);
+                        }
+                        self.loaded = true;
+                }else{
+                    alert('获取数据失败');
+                }
+                
+            }).fail(function(data, status, jqXHR){
+                alert('服务器请求超时');
+            });
+        }
+    },
+    template: `<ol class="breadcrumb"><li>用户管理</li><li>{{subtitle}}</li></ol>
+                <div><pagination-table v-if="loaded" :post-datas="postDatas" :header="header" :actions="actions"></pagination-table></div>`
+})
+
 //route:sendMessage
 var SectionSendMessage = Vue.extend({
     data: function() {
@@ -515,6 +605,7 @@ var SectionFeedback = Vue.extend({
         var tmp={};
         tmp.loaded = false;
         tmp.header = [
+                {name:'UID',from:'_id'},
                 {name:'反馈类型',from:'type',filter:'radio/feedback'},
                 {name:'反馈内容',from:'content'},
         ];
@@ -572,6 +663,7 @@ var SectionOrder = Vue.extend({
         var tmp={};
         tmp.loaded = false;
         tmp.header = [
+            {name:'UID',from:'_id'},
             {name:'年级',from:'grade'},
             {name:'课程类型',from:'course'},
             {name:'课程时长',from:'time',filter:'min'},
@@ -579,7 +671,7 @@ var SectionOrder = Vue.extend({
             {name:'交通补贴',from:'subsidy',filter:'money'},
             {name:'孩子年龄',from:'childAge',filter:'age'},
             {name:'孩子性别',from:'childGender',filter:'radio/gender'},
-            {name:'订单类型',from:'type'},
+            {name:'订单类型',from:'type',filter:'radio/order_type'},
             {name:'订单状态',from:'state',filter:'radio/order_state'},
             {name:'标签',from:'tag'},
             {name:'订单号',from:'orderNumber'},
@@ -649,16 +741,19 @@ var SectionOrder = Vue.extend({
             case 'd1':
             url = '/Order/Discount?type=0';
             tmp.subtitle = '未审核推广';
+            tmp.actions = ['上线'];
             break;
             
             case 'd2':
             url = '/Order/Discount?type=1';
             tmp.subtitle = '已上线推广';
+            tmp.actions = ['下线'];
             break;
             
             case 'd3':
             url = '/Order/Discount?type=2';
             tmp.subtitle = '已下线推广';
+            tmp.actions = ['上线'];
             break;
         }
         
@@ -767,6 +862,9 @@ router.map({
             '/feedback/:type_id': {
                 component: SectionFeedback,
             },
+            '/teacher/:type_id': {
+                component: SectionTeacher,
+            }
         }
     },
 })
@@ -821,6 +919,8 @@ var Store = {
             return str + ' 元';
             case 'bool':
             return str?'是':'否';
+            case 'radio/order_type':
+            return ['单次预约','特价订单','多次预约'][str];
             case 'radio/user_type':
             return ['家长/家教','家教','家长'][str];
             case 'radio/order_state':
@@ -897,6 +997,7 @@ var Store = {
     },
     userHeader:[
         [
+                {name:'UID',from:'_id'},
                 {name:'姓名',from:'name'},
                 {name:'性别',from:'gender',filter:'radio/gender'},
                 {name:'电话',from:'phone'},
