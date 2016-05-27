@@ -91,12 +91,7 @@ var SideBar = Vue.extend({
             }]
         }
     },
-    template: `<div v-for="nav in navs">
-                    <h4 v-on:click="toggle($index)">{{nav.name}} <span>{{nav.state}}</span></h4>
-                    <ul class="nav nav-sidebar" :class="{hidden:nav.state == '+'}">
-                        <li v-for="item in nav.items" v-link="{path:item.href,activeClass:'active'}"><a>{{item.name}}</a></li>
-                    </ul>
-                </div>`,
+    template: "<div v-for=\"nav in navs\">\n                    <h4 v-on:click=\"toggle($index)\">{{nav.name}} <span>{{nav.state}}</span></h4>\n                    <ul class=\"nav nav-sidebar\" :class=\"{hidden:nav.state == '+'}\">\n                        <li v-for=\"item in nav.items\" v-link=\"{path:item.href,activeClass:'active'}\"><a>{{item.name}}</a></li>\n                    </ul>\n                </div>",
     methods: {
         toggle: function(index) {
             if(this.navs[index].state=='+'){
@@ -114,23 +109,7 @@ var Modal = Vue.extend({
     data: function() {
         return Store.modal;
     },
-    template:`<div class="modal fade" id="app-modal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel">
-                <div class="modal-dialog" role="document">
-                    <div class="modal-content">
-                        <div class="modal-header">
-                            <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
-                            <h4 class="modal-title">详情</h4>
-                        </div>
-                        <div class="modal-body">
-                            <div v-if="$index > 0" v-for="item in datas" class="bundle" track-by="$index">
-                                <p class="left"><strong>{{header[$index].name}}</strong></p>
-                                <p class="right" v-if="header[$index].filter!=='img'">{{item}}</p>
-                                <img class="right" v-if="header[$index].filter==='img'" :src="item" />
-                            </div>   
-                        </div>
-                    </div>
-                </div>
-            </div>`,
+    template:"<div class=\"modal fade\" id=\"app-modal\" tabindex=\"-1\" role=\"dialog\" aria-labelledby=\"myModalLabel\">\n                <div class=\"modal-dialog\" role=\"document\">\n                    <div class=\"modal-content\">\n                        <div class=\"modal-header\">\n                            <button type=\"button\" class=\"close\" data-dismiss=\"modal\" aria-label=\"Close\"><span aria-hidden=\"true\">&times;</span></button>\n                            <h4 class=\"modal-title\">详情</h4>\n                        </div>\n                        <div class=\"modal-body\">\n                            <div v-if=\"$index > 0\" v-for=\"item in datas\" class=\"bundle\" track-by=\"$index\">\n                                <p class=\"left\"><strong>{{header[$index].name}}</strong></p>\n                                <p class=\"right\" v-if=\"header[$index].filter!=='img'\">{{item}}</p>\n                                <img class=\"right\" v-if=\"header[$index].filter==='img'\" :src=\"item\" />\n                            </div>   \n                        </div>\n                    </div>\n                </div>\n            </div>",
 });
 Vue.component('modal', Modal);
 
@@ -202,20 +181,7 @@ var PaginationTable = Vue.extend({
             keyword: '',
         };
     },
-    template: `<form class="form-inline" onSubmit="return false">
-                    <div class="form-group">
-                        <input type="text" class="form-control" v-model="keyword">
-                    </div>
-                    <button v-on:click="search()" type="submit" class="btn btn-default">搜索</button>
-                    <button v-on:click="exportTable()" style="float:right;" type="submit" class="btn btn-default">全部导出</button>
-                </form>
-                <div class="table-responsive">
-                    <table class="table table-hover">
-                        <thead><tr><th>操作</th><th v-if="$index > 0" v-for="cell in header">{{cell.name}}</th></tr></thead>
-                        <tbody><tr is="action-row" v-for="item in pages[currentPage]" :post-data="item" :actions="actions"></tr></tbody>
-                    </table>
-                </div>
-                <ul class="pagination"><li v-for="page in pages" v-on:click="changePage($index)" :class="{'active':$index===currentPage}"><a>{{$index+1}}</a></li></ul>`,
+    template: "<form class=\"form-inline\" onSubmit=\"return false\">\n                    <div class=\"form-group\">\n                        <input type=\"text\" class=\"form-control\" v-model=\"keyword\">\n                    </div>\n                    <button v-on:click=\"search()\" type=\"submit\" class=\"btn btn-default\">搜索</button>\n                    <button v-on:click=\"exportTable()\" style=\"float:right;\" type=\"submit\" class=\"btn btn-default\">全部导出</button>\n                </form>\n                <div class=\"table-responsive\">\n                    <table class=\"table table-hover\">\n                        <thead><tr><th>操作</th><th v-if=\"$index > 0\" v-for=\"cell in header\">{{cell.name}}</th></tr></thead>\n                        <tbody><tr is=\"action-row\" v-for=\"item in pages[currentPage]\" :post-data=\"item\" :actions=\"actions\"></tr></tbody>\n                    </table>\n                </div>\n                <ul class=\"pagination\"><li v-for=\"page in pages\" v-on:click=\"changePage($index)\" :class=\"{'active':$index===currentPage}\"><a>{{$index+1}}</a></li></ul>",
     methods:{
         chunk: function (array, size) {
             var result = [];
@@ -265,19 +231,7 @@ var DirtyForm = Vue.extend({
         }
         return tmp;
     },
-    template:`<form onSubmit="return false;">
-                    <div class="form-group" v-for="item in form">
-                        <label>{{item.name}}</label><span :class="{hidden:(models[$index]===item.default)}">*</span>
-                        <template v-if="item.filter===undefined">
-                            <br><input class="form-control" type="text" v-model="models[$index]"/>
-                        </template>
-                        <template v-if="item.filter==='textarea'">
-                            <textarea class="form-control" rows="3" v-model="models[$index]"></textarea>
-                        </template>
-                    </div>
-                    <button class="btn btn-default" v-on:click="submit" :disabled="submitLock">修改</button>
-                    <span>（只改动带*号的数据）</span>
-                </form>`,
+    template:"<form onSubmit=\"return false;\">\n                    <div class=\"form-group\" v-for=\"item in form\">\n                        <label>{{item.name}}</label><span :class=\"{hidden:(models[$index]===item.default)}\">*</span>\n                        <template v-if=\"item.filter===undefined\">\n                            <br><input class=\"form-control\" type=\"text\" v-model=\"models[$index]\"/>\n                        </template>\n                        <template v-if=\"item.filter==='textarea'\">\n                            <textarea class=\"form-control\" rows=\"3\" v-model=\"models[$index]\"></textarea>\n                        </template>\n                    </div>\n                    <button class=\"btn btn-default\" v-on:click=\"submit\" :disabled=\"submitLock\">修改</button>\n                    <span>（只改动带*号的数据）</span>\n                </form>",
     methods:{
         submit: function() {
             var tmp={};
@@ -322,20 +276,7 @@ Vue.component('dirty-form',DirtyForm);
 
 //route:home 
 var PageHome = Vue.extend({
-    template:`<div class="container-fluid">
-                <div class="row">
-                    <!-- 侧边导航 -->
-                    <div class="col-xs-2 sidebar">
-                        <side-bar></side-bar>
-                    </div>
-
-                    <div class="col-xs-10 col-xs-offset-2 main">
-                        <router-view></router-view>
-                    </div>
-                </div>
-            </div>
-            
-            <modal></modal>`
+    template:"<div class=\"container-fluid\">\n                <div class=\"row\">\n                    <!-- 侧边导航 -->\n                    <div class=\"col-xs-2 sidebar\">\n                        <side-bar></side-bar>\n                    </div>\n\n                    <div class=\"col-xs-10 col-xs-offset-2 main\">\n                        <router-view></router-view>\n                    </div>\n                </div>\n            </div>\n            <modal></modal>"
 })
 
 //route:login
@@ -373,16 +314,7 @@ var PageLogin = Vue.extend({
             });
         }
     },
-    template: `<div class="container">
-                    <form class="form-signin" onsubmit="return false;">
-                        <h2 class="form-signin-heading">请登录</h2>
-                        <label class="sr-only" for="inputEmail">管理员账号</label>
-                        <input v-model="account" class="form-control" id="inputEmail" autofocus="" required="" type="text" placeholder="请输入账号...">
-                        <label class="sr-only" for="inputPassword">密码</label>
-                        <input v-model="password" class="form-control" id="inputPassword" required="" type="password" placeholder="请输入密码...">
-                        <button class="btn btn-lg btn-primary btn-block" type="submit" v-on:click="submit()">登陆</button>
-                    </form>
-                </div>`,
+    template: "<div class=\"container\">\n                    <form class=\"form-signin\" onsubmit=\"return false;\">\n                        <h2 class=\"form-signin-heading\">请登录</h2>\n                        <label class=\"sr-only\" for=\"inputEmail\">管理员账号</label>\n                        <input v-model=\"account\" class=\"form-control\" id=\"inputEmail\" autofocus=\"\" required=\"\" type=\"text\" placeholder=\"请输入账号...\">\n                        <label class=\"sr-only\" for=\"inputPassword\">密码</label>\n                        <input v-model=\"password\" class=\"form-control\" id=\"inputPassword\" required=\"\" type=\"password\" placeholder=\"请输入密码...\">\n                        <button class=\"btn btn-lg btn-primary btn-block\" type=\"submit\" v-on:click=\"submit()\">登陆</button>\n                    </form>\n                </div>",
 })
 
 //route:allUser
@@ -431,8 +363,8 @@ var SectionAllUser = Vue.extend({
             });
         }
     },
-    template: `<ol class="breadcrumb"><li>用户管理</li><li>所有用户信息</li></ol>
-                <div><pagination-table v-if="loaded" :post-datas="postDatas" :header="header" :actions="actions"></pagination-table></div>`
+    template: '<ol class="breadcrumb"><li>用户管理</li><li>所有用户信息</li></ol>'+
+                '<div><pagination-table v-if="loaded" :post-datas="postDatas" :header="header" :actions="actions"></pagination-table></div>'
 })
 
 //route:parent
@@ -481,8 +413,8 @@ var SectionParent = Vue.extend({
             });
         }
     },
-    template: `<ol class="breadcrumb"><li>用户管理</li><li>家长信息</li></ol>
-                <div><pagination-table v-if="loaded" :post-datas="postDatas" :header="header" :actions="actions"></pagination-table></div>`
+    template: '<ol class="breadcrumb"><li>用户管理</li><li>家长信息</li></ol>'+
+                '<div><pagination-table v-if="loaded" :post-datas="postDatas" :header="header" :actions="actions"></pagination-table></div>'
 })
 
 //route:teacher
@@ -540,8 +472,8 @@ var SectionTeacher = Vue.extend({
             });
         }
     },
-    template: `<ol class="breadcrumb"><li>用户管理</li><li>{{subtitle}}</li></ol>
-                <div><pagination-table v-if="loaded" :post-datas="postDatas" :header="header" :actions="actions"></pagination-table></div>`
+    template: '<ol class="breadcrumb"><li>用户管理</li><li>{{subtitle}}</li></ol>'+
+                '<div><pagination-table v-if="loaded" :post-datas="postDatas" :header="header" :actions="actions"></pagination-table></div>'
 })
 
 //route:sendMessage
@@ -554,21 +486,7 @@ var SectionSendMessage = Vue.extend({
             submitLock: false,
         }
     },
-    template: `<ol class="breadcrumb"><li>消息中心</li><li>发送消息</li></ol>
-                <div>
-                    <form onSubmit="return false;">
-                        <div class="form-group">
-                            <label>发送内容</label><textarea class="form-control" rows="3" v-model="content"></textarea>
-                        </div>
-                        <div class="form-group">
-                            <label>发送对象</label><br />
-                            <label class="radio-inline"><input v-model="type" type="radio" value="1" />家教</label>
-                            <label class="radio-inline"><input v-model="type" type="radio" value="2" />家长</label>
-                            <label class="radio-inline"><input v-model="type" type="radio" value="3" />全部</label>
-                        </div>
-                        <button class="btn btn-default" v-on:click="submit" :disabled="submitLock">提交消息</button>
-                    </form>
-                </div>`,
+    template: "<ol class=\"breadcrumb\"><li>消息中心</li><li>发送消息</li></ol>\n                <div>\n                    <form onSubmit=\"return false;\">\n                        <div class=\"form-group\">\n                            <label>发送内容</label><textarea class=\"form-control\" rows=\"3\" v-model=\"content\"></textarea>\n                        </div>\n                        <div class=\"form-group\">\n                            <label>发送对象</label><br />\n                            <label class=\"radio-inline\"><input v-model=\"type\" type=\"radio\" value=\"1\" />家教</label>\n                            <label class=\"radio-inline\"><input v-model=\"type\" type=\"radio\" value=\"2\" />家长</label>\n                            <label class=\"radio-inline\"><input v-model=\"type\" type=\"radio\" value=\"3\" />全部</label>\n                        </div>\n                        <button class=\"btn btn-default\" v-on:click=\"submit\" :disabled=\"submitLock\">提交消息</button>\n                    </form>\n                </div>",
     methods: {
         submit: function () {
             this.submitLock = true;
@@ -653,8 +571,8 @@ var SectionFeedback = Vue.extend({
             });
         }
     },
-    template: `<ol class="breadcrumb"><li>消息中心</li><li>{{subtitle}}</li></ol>
-                <div><pagination-table v-if="loaded" :post-datas="postDatas" :header="header" :actions="actions"></pagination-table></div>`
+    template: '<ol class="breadcrumb"><li>消息中心</li><li>{{subtitle}}</li></ol>'+
+                '<div><pagination-table v-if="loaded" :post-datas="postDatas" :header="header" :actions="actions"></pagination-table></div>'
 })
 
 //route:order
@@ -798,8 +716,8 @@ var SectionOrder = Vue.extend({
             });
         }
     },
-    template: `<ol class="breadcrumb"><li>{{maintitle}}</li><li>{{subtitle}}</li></ol>
-                <div><pagination-table v-if="loaded" :post-datas="postDatas" :header="header" :actions="actions"></pagination-table></div>`
+    template: '<ol class="breadcrumb"><li>{{maintitle}}</li><li>{{subtitle}}</li></ol>'+
+                '<div><pagination-table v-if="loaded" :post-datas="postDatas" :header="header" :actions="actions"></pagination-table></div>'
 })
 
 //route:onlineParams
@@ -834,8 +752,8 @@ var SectionOnlineParams = Vue.extend({
             loaded: false,
         }
     },
-    template: `<ol class="breadcrumb"><li>在线参数</li><li>修改在线参数</li></ol>
-                <div><dirty-form v-if="loaded" :form="form" api="/OnlineParams"></dirty-form></div>`,
+    template: '<ol class="breadcrumb"><li>在线参数</li><li>修改在线参数</li></ol>'+
+                '<div><dirty-form v-if="loaded" :form="form" api="/OnlineParams"></dirty-form></div>',
 })
 
 //route:guideMap
@@ -863,7 +781,7 @@ var SectionGuideMap = Vue.extend({
         }
     },
     methods: {
-        delete: function(index) {
+        clean: function(index) {
             this.guideMap.splice(index,1);
         },
         add: function(index) {
@@ -922,22 +840,7 @@ var SectionGuideMap = Vue.extend({
             });
         }
     },
-    template:`<ol class="breadcrumb"><li>在线参数</li><li>修改广告</li></ol>
-              <div v-if="loaded">
-                <div class="guidemap" v-for="ad in guideMap">
-                    <a class="delete" href="javascript:void(0);" v-on:click="delete($index)">删除</a>
-                    <p><strong>预览图</strong></p>
-                    <img :src="ad.image" alt="暂无图片">
-                    <input type="file" v-on:change="upload($event,$index)"/>
-                    <p><strong>广告链接</strong></p>
-                    <input class="form-control" type="text" v-model="ad.url" />
-                    <div class="action"></div>
-                </div>
-                <button class="btn btn-default" v-on:click="add()">添加新广告</button>
-              </div>
-              <div class="creater">
-              <button class="btn btn-default" v-on:click="submit()">提交变更</button><span style="color:red;">（注意：所有变更提交之后才生效）</span>
-              </div>`
+    template:"<ol class=\"breadcrumb\"><li>在线参数</li><li>修改广告</li></ol>\n              <div v-if=\"loaded\">\n                <div class=\"guidemap\" v-for=\"ad in guideMap\">\n                    <a class=\"delete\" href=\"javascript:void(0);\" v-on:click=\"clean($index)\">删除</a>\n                    <p><strong>预览图</strong></p>\n                    <img :src=\"ad.image\" alt=\"暂无图片\">\n                    <input type=\"file\" v-on:change=\"upload($event,$index)\"/>\n                    <p><strong>广告链接</strong></p>\n                    <input class=\"form-control\" type=\"text\" v-model=\"ad.url\" />\n                    <div class=\"action\"></div>\n                </div>\n                <button class=\"btn btn-default\" v-on:click=\"add()\">添加新广告</button>\n              </div>\n              <div class=\"creater\">\n              <button class=\"btn btn-default\" v-on:click=\"submit()\">提交变更</button><span style=\"color:red;\">（注意：所有变更提交之后才生效）</span>\n              </div>"
 })
 
 //路由
