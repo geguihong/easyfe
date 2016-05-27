@@ -141,3 +141,26 @@ img{
 .hidden {
   display: none;
 }
+
+/* 广告 */
+.guidemap {
+  padding: 20px;
+  width: 750px;
+  border: 3px solid rgba(0,0,0,.1);
+  margin-bottom: 20px;
+}
+
+.guidemap img {
+  max-width: 100%;
+}
+
+.guidemap .delete {
+  float: right;
+  color: red;
+}
+
+.creater {
+  margin-top: 20px;
+  border-top: 2px dotted black;
+  padding-top: 20px;
+}

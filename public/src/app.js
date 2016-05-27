@@ -84,6 +84,9 @@ var SideBar = Vue.extend({
                 items: [{
                     name:'修改在线参数',
                     href:'/onlineParams'
+                },{
+                    name:'修改广告',
+                    href:'/guidemap',
                 }]
             }]
         }
@@ -835,6 +838,108 @@ var SectionOnlineParams = Vue.extend({
                 <div><dirty-form v-if="loaded" :form="form" api="/OnlineParams"></dirty-form></div>`,
 })
 
+//route:guideMap
+var SectionGuideMap = Vue.extend({
+    data: function() {
+        var self = this;
+        $.ajax({
+            url:Store.rootUrl+'/OnlineParams?token='+Store.token,
+            dataType: 'json'
+        }).done(function(data, status, jqXHR){
+            if(data.result=="success"){
+                self.guideMap = data.data.guideMap;
+                self.qnToken = "R2Rq9_dBXtrL6wqLwA8_GC6EZNR9JU06xaGegd19:mKzKD3gB-mkdQpjt1BVtBAZmNYw=:eyJzY29wZSI6ImVhc3lmZSIsImRlYWRsaW5lIjoxNDg0OTIxMjY4fQ==";
+                self.loaded = true;
+            }else{
+                alert('获取数据失败');
+            }
+            
+        }).fail(function(data, status, jqXHR){
+            alert('服务器请求超时');
+        });
+        return {
+            loaded: false,
+            guideMap: [],
+        }
+    },
+    methods: {
+        delete: function(index) {
+            this.guideMap.splice(index,1);
+        },
+        add: function(index) {
+            this.guideMap.push({image:'',url:''});
+        },
+        upload: function(e,index) {
+            var self = this;
+            var file = e.target.files[0];
+            var supportedTypes = ['image/jpg', 'image/jpeg', 'image/png'];
+            if (file && supportedTypes.indexOf(file.type) >= 0) {
+                var oMyForm = new FormData();
+                oMyForm.append("token", this.qnToken);
+                oMyForm.append("file", file);
+                oMyForm.append("key", Date.parse(new Date()));
+
+                var xhr = new XMLHttpRequest();
+                xhr.open("POST", "http://upload.qiniu.com/");
+                xhr.onreadystatechange = function(response) {
+                    if (xhr.readyState == 4 && xhr.status == 200 && xhr.responseText != "") {
+                        var blkRet = JSON.parse(xhr.responseText);
+                        console && console.log(blkRet);
+                        self.guideMap[index].image = 'http://7xrvd4.com1.z0.glb.clouddn.com/'+blkRet.key;
+                    } else if (xhr.status != 200 && xhr.responseText) {
+                        console && console.log('上传失败');
+                    }
+                };
+                xhr.send(oMyForm);
+            } else {
+                alert('文件格式只支持：jpg、jpeg 和 png');
+            }
+        },
+        submit: function() {
+            var tmp = {
+                token: Store.token,
+                data: {
+                    guideMap: this.guideMap,
+                }
+            };
+            
+            var self = this;
+            $.ajax({
+                url: Store.rootUrl+'/OnlineParams',
+                dataType: 'json',
+                data:JSON.stringify(tmp),
+                type:'POST',
+                contentType: "application/json; charset=utf-8"
+            }).done(function(data, status, jqXHR){
+                if(data.result=='success'){
+                    location.reload();
+                    alert('修改成功');
+                }else{
+                    alert('修改失败');
+                }
+            }).fail(function(data, status, jqXHR){
+               alert('服务器请求超时');
+            });
+        }
+    },
+    template:`<ol class="breadcrumb"><li>在线参数</li><li>修改广告</li></ol>
+              <div v-if="loaded">
+                <div class="guidemap" v-for="ad in guideMap">
+                    <a class="delete" href="javascript:void(0);" v-on:click="delete($index)">删除</a>
+                    <p><strong>预览图</strong></p>
+                    <img :src="ad.image" alt="暂无图片">
+                    <input type="file" v-on:change="upload($event,$index)"/>
+                    <p><strong>广告链接</strong></p>
+                    <input class="form-control" type="text" v-model="ad.url" />
+                    <div class="action"></div>
+                </div>
+                <button class="btn btn-default" v-on:click="add()">添加新广告</button>
+              </div>
+              <div class="creater">
+              <button class="btn btn-default" v-on:click="submit()">提交变更</button><span style="color:red;">（注意：所有变更提交之后才生效）</span>
+              </div>`
+})
+
 //路由
 var router = new VueRouter()
 router.map({
@@ -864,6 +969,9 @@ router.map({
             },
             '/teacher/:type_id': {
                 component: SectionTeacher,
+            },
+            '/guidemap': { 
+                component: SectionGuideMap,
             }
         }
     },
