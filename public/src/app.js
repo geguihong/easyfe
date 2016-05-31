@@ -85,8 +85,11 @@ var SideBar = Vue.extend({
                     name:'修改在线参数',
                     href:'/onlineParams'
                 },{
-                    name:'修改广告',
+                    name:'修改轮播图',
                     href:'/guidemap',
+                },{
+                    name:'修改首页广告',
+                    href:'/advertise'
                 }]
             }]
         }
@@ -223,7 +226,7 @@ Vue.component('pagination-table',PaginationTable);
 
 //BookMark:脏检查表单
 var DirtyForm = Vue.extend({
-    props:['form','api'],
+    props:['form','api','qnToken'],
     data:function() {
         var tmp = {models:[],submitLock:false};
         for(var i=0;i!=this.form.length;i++){
@@ -231,8 +234,50 @@ var DirtyForm = Vue.extend({
         }
         return tmp;
     },
-    template:"<form onSubmit=\"return false;\">\n                    <div class=\"form-group\" v-for=\"item in form\">\n                        <label>{{item.name}}</label><span :class=\"{hidden:(models[$index]===item.default)}\">*</span>\n                        <template v-if=\"item.filter===undefined\">\n                            <br><input class=\"form-control\" type=\"text\" v-model=\"models[$index]\"/>\n                        </template>\n                        <template v-if=\"item.filter==='textarea'\">\n                            <textarea class=\"form-control\" rows=\"3\" v-model=\"models[$index]\"></textarea>\n                        </template>\n                    </div>\n                    <button class=\"btn btn-default\" v-on:click=\"submit\" :disabled=\"submitLock\">修改</button>\n                    <span>（只改动带*号的数据）</span>\n                </form>",
+    template:"<form onSubmit=\"return false;\">\n"+
+                "<div class=\"form-group\" v-for=\"item in form\">\n"+
+                    "<label>{{item.name}}</label><span :class=\"{hidden:(models[$index]===item.default)}\">*</span>\n"+
+                    "<template v-if=\"item.filter===undefined\">\n"+
+                        "<br><input class=\"form-control\" type=\"text\" v-model=\"models[$index]\"/>\n"+
+                    "</template>\n"+
+                    "<template v-if=\"item.filter==='textarea'\">\n"+
+                        "<textarea class=\"form-control\" rows=\"3\" v-model=\"models[$index]\"></textarea>\n"+
+                    "</template>\n"+
+                    "<template v-if=\"item.filter==='img'\">\n"+
+                        "<br><img :src=\"models[$index]\" alt=\"暂无图片\">\n"+
+                        "<input type=\"file\" v-on:change=\"upload($event,$index)\"/>\n"+
+                    "</template>\n"+
+               "</div>\n"+                   
+                "<button class=\"btn btn-default\" v-on:click=\"submit\" :disabled=\"submitLock\">修改</button>\n"+
+                "<span>（只改动带*号的数据）</span>\n"+
+            "</form>",
     methods:{
+        upload: function(e,index) {
+            var self = this;
+            var file = e.target.files[0];
+            var supportedTypes = ['image/jpg', 'image/jpeg', 'image/png'];
+            if (file && supportedTypes.indexOf(file.type) >= 0) {
+                var oMyForm = new FormData();
+                oMyForm.append("token", self.qnToken);
+                oMyForm.append("file", file);
+                oMyForm.append("key", Date.parse(new Date()));
+
+                var xhr = new XMLHttpRequest();
+                xhr.open("POST", "http://upload.qiniu.com/");
+                xhr.onreadystatechange = function(response) {
+                    if (xhr.readyState == 4 && xhr.status == 200 && xhr.responseText != "") {
+                        var blkRet = JSON.parse(xhr.responseText);
+                        console && console.log(blkRet);
+                        self.models.$set(index,'http://7xrvd4.com1.z0.glb.clouddn.com/'+blkRet.key);
+                    } else if (xhr.status != 200 && xhr.responseText) {
+                        console && console.log('上传失败');
+                    }
+                };
+                xhr.send(oMyForm);
+            } else {
+                alert('文件格式只支持：jpg、jpeg 和 png');
+            }
+        },
         submit: function() {
             var tmp={};
             var data={};
@@ -250,6 +295,7 @@ var DirtyForm = Vue.extend({
                 return;
             }
             
+            console.log(tmp);
             var self = this;
             $.ajax({
                 url: Store.rootUrl+self.api,
@@ -766,7 +812,7 @@ var SectionGuideMap = Vue.extend({
         }).done(function(data, status, jqXHR){
             if(data.result=="success"){
                 self.guideMap = data.data.guideMap;
-                self.qnToken = "R2Rq9_dBXtrL6wqLwA8_GC6EZNR9JU06xaGegd19:mKzKD3gB-mkdQpjt1BVtBAZmNYw=:eyJzY29wZSI6ImVhc3lmZSIsImRlYWRsaW5lIjoxNDg0OTIxMjY4fQ==";
+                self.qnToken = data.data.qnToken;
                 self.loaded = true;
             }else{
                 alert('获取数据失败');
@@ -840,7 +886,41 @@ var SectionGuideMap = Vue.extend({
             });
         }
     },
-    template:"<ol class=\"breadcrumb\"><li>在线参数</li><li>修改广告</li></ol>\n              <div v-if=\"loaded\">\n                <div class=\"guidemap\" v-for=\"ad in guideMap\">\n                    <a class=\"delete\" href=\"javascript:void(0);\" v-on:click=\"clean($index)\">删除</a>\n                    <p><strong>预览图</strong></p>\n                    <img :src=\"ad.image\" alt=\"暂无图片\">\n                    <input type=\"file\" v-on:change=\"upload($event,$index)\"/>\n                    <p><strong>广告链接</strong></p>\n                    <input class=\"form-control\" type=\"text\" v-model=\"ad.url\" />\n                    <div class=\"action\"></div>\n                </div>\n                <button class=\"btn btn-default\" v-on:click=\"add()\">添加新广告</button>\n              </div>\n              <div class=\"creater\">\n              <button class=\"btn btn-default\" v-on:click=\"submit()\">提交变更</button><span style=\"color:red;\">（注意：所有变更提交之后才生效）</span>\n              </div>"
+    template:"<ol class=\"breadcrumb\"><li>在线参数</li><li>修改轮播图</li></ol>\n              <div v-if=\"loaded\">\n                <div class=\"guidemap\" v-for=\"ad in guideMap\">\n                    <a class=\"delete\" href=\"javascript:void(0);\" v-on:click=\"clean($index)\">删除</a>\n                    <p><strong>预览图</strong></p>\n                    <img :src=\"ad.image\" alt=\"暂无图片\">\n                    <input type=\"file\" v-on:change=\"upload($event,$index)\"/>\n                    <p><strong>广告链接</strong></p>\n                    <input class=\"form-control\" type=\"text\" v-model=\"ad.url\" />\n                    <div class=\"action\"></div>\n                </div>\n                <button class=\"btn btn-default\" v-on:click=\"add()\">添加新广告</button>\n              </div>\n              <div class=\"creater\">\n              <button class=\"btn btn-default\" v-on:click=\"submit()\">提交变更</button><span style=\"color:red;\">（注意：所有变更提交之后才生效）</span>\n              </div>"
+})
+
+//route:
+var SectionAdvertise = Vue.extend({
+    data: function() {
+        var self = this;
+        $.ajax({
+            url:Store.rootUrl+'/OnlineParams?token='+Store.token,
+            dataType: 'json'
+        }).done(function(data, status, jqXHR){
+            if(data.result=="success"){
+                for(var i=0;i!=self.form.length;i++){
+                    self.form[i].default = Store.getter(data.data,self.form[i].from);
+                }
+                self.qnToken = data.data.qnToken;
+                self.loaded = true;
+            }else{
+                alert('获取数据失败');
+            }
+            
+        }).fail(function(data, status, jqXHR){
+            alert('服务器请求超时');
+        });
+        
+        return {
+            form: [
+                {name:'广告预览图',from:'advertise.image',filter:'img'},
+                {name:'副标题',from:'advertise.link'},
+                ],
+            loaded: false,
+        }
+    },
+    template: '<ol class="breadcrumb"><li>在线参数</li><li>修改首页广告</li></ol>'+
+                '<div><dirty-form v-if="loaded" :form="form" api="/OnlineParams" :qn-token="qnToken"></dirty-form></div>',
 })
 
 //路由
@@ -875,6 +955,9 @@ router.map({
             },
             '/guidemap': { 
                 component: SectionGuideMap,
+            },
+            '/advertise': {
+                component: SectionAdvertise,
             }
         }
     },
