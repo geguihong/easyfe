@@ -1,3 +1,30 @@
+//Bookmark:安全锁
+var safeLock = Vue.extend({
+    data: function() {
+        return {
+            safeLock: true,
+            safeLockPsw: '',
+        };
+    },
+    template:"<template v-if=\"safeLock\">\n"+
+                        "<input placeholder=\"输入密码才能修改...\" type=\"password\" v-model=\"safeLockPsw\" />\n"+
+                        "<button class=\"btn btn-default\" v-on:click=\"unlock()\">解锁提交按钮</button>"+
+                    "</template>"+
+                    "<template v-if=\"!safeLock\">\n"+
+                        "<slot>按钮失效</slot>\n"+
+                    "</template>",
+    methods:{
+        unlock: function() {
+            if (this.safeLockPsw === Store.safeLockPsw) {
+                this.safeLock = false;
+            } else {
+                alert('安全码错误！');
+            }
+        },
+    },
+});
+Vue.component('safe-lock', safeLock);
+
 //Bookmark:侧边导航
 var SideBar = Vue.extend({
     data: function() {
@@ -331,10 +358,12 @@ var PageLogin = Vue.extend({
         return {
             account: '',
             password: '',
+            submitLock: false,
         }
     },
     methods:{
         submit: function() {
+            this.submitLock = true;
             var tmp = {
                 account: this.account,
                 password: $.md5(this.password),
@@ -360,7 +389,7 @@ var PageLogin = Vue.extend({
             });
         }
     },
-    template: "<div class=\"container\">\n                    <form class=\"form-signin\" onsubmit=\"return false;\">\n                        <h2 class=\"form-signin-heading\">请登录</h2>\n                        <label class=\"sr-only\" for=\"inputEmail\">管理员账号</label>\n                        <input v-model=\"account\" class=\"form-control\" id=\"inputEmail\" autofocus=\"\" required=\"\" type=\"text\" placeholder=\"请输入账号...\">\n                        <label class=\"sr-only\" for=\"inputPassword\">密码</label>\n                        <input v-model=\"password\" class=\"form-control\" id=\"inputPassword\" required=\"\" type=\"password\" placeholder=\"请输入密码...\">\n                        <button class=\"btn btn-lg btn-primary btn-block\" type=\"submit\" v-on:click=\"submit()\">登陆</button>\n                    </form>\n                </div>",
+    template: "<div class=\"container\">\n                    <form class=\"form-signin\" onsubmit=\"return false;\">\n                        <h2 class=\"form-signin-heading\">请登录</h2>\n                        <label class=\"sr-only\" for=\"inputEmail\">管理员账号</label>\n                        <input v-model=\"account\" class=\"form-control\" id=\"inputEmail\" autofocus=\"\" required=\"\" type=\"text\" placeholder=\"请输入账号...\">\n                        <label class=\"sr-only\" for=\"inputPassword\">密码</label>\n                        <input v-model=\"password\" class=\"form-control\" id=\"inputPassword\" required=\"\" type=\"password\" placeholder=\"请输入密码...\">\n                        <button class=\"btn btn-lg btn-primary btn-block\" type=\"submit\" v-on:click=\"submit()\" :disabled=\"submitLock\">登陆</button>\n                    </form>\n                </div>",
 })
 
 //route:allUser
@@ -824,6 +853,8 @@ var SectionGuideMap = Vue.extend({
         return {
             loaded: false,
             guideMap: [],
+            safeLock: true,
+            safeLockPsw: '',
         }
     },
     methods: {
@@ -886,10 +917,25 @@ var SectionGuideMap = Vue.extend({
             });
         }
     },
-    template:"<ol class=\"breadcrumb\"><li>在线参数</li><li>修改轮播图</li></ol>\n              <div v-if=\"loaded\">\n                <div class=\"guidemap\" v-for=\"ad in guideMap\">\n                    <a class=\"delete\" href=\"javascript:void(0);\" v-on:click=\"clean($index)\">删除</a>\n                    <p><strong>预览图</strong></p>\n                    <img :src=\"ad.image\" alt=\"暂无图片\">\n                    <input type=\"file\" v-on:change=\"upload($event,$index)\"/>\n                    <p><strong>广告链接</strong></p>\n                    <input class=\"form-control\" type=\"text\" v-model=\"ad.url\" />\n                    <div class=\"action\"></div>\n                </div>\n                <button class=\"btn btn-default\" v-on:click=\"add()\">添加新广告</button>\n              </div>\n              <div class=\"creater\">\n              <button class=\"btn btn-default\" v-on:click=\"submit()\">提交变更</button><span style=\"color:red;\">（注意：所有变更提交之后才生效）</span>\n              </div>"
+    template:"<ol class=\"breadcrumb\"><li>在线参数</li><li>修改轮播图</li></ol>\n"+
+                    "<div v-if=\"loaded\">\n"+
+                        "<div class=\"guidemap\" v-for=\"ad in guideMap\">\n"+
+                            "<a class=\"delete\" href=\"javascript:void(0);\" v-on:click=\"clean($index)\">删除</a>\n"+
+                            "<p><strong>预览图</strong></p>\n"+
+                            "<img :src=\"ad.image\" alt=\"暂无图片\">\n"+
+                            "<input type=\"file\" v-on:change=\"upload($event,$index)\"/>\n"+
+                            "<p><strong>广告链接</strong></p>\n"+
+                            "<input class=\"form-control\" type=\"text\" v-model=\"ad.link\" />\n"+
+                            "<div class=\"action\"></div>\n"+
+                        "</div>\n"+
+                        "<button class=\"btn btn-default\" v-on:click=\"add()\">添加新广告</button>\n"+
+                    "</div>\n"+
+                    "<div class=\"creater\">\n"+
+                        "<safe-lock><button class=\"btn btn-default\" v-on:click=\"submit()\">提交变更</button><span style=\"color:red;\">（注意：所有变更提交之后才生效）</span></safe-lock>\n"+
+                    "</div>",
 })
 
-//route:
+//route:advertise
 var SectionAdvertise = Vue.extend({
     data: function() {
         var self = this;
@@ -972,6 +1018,7 @@ var Store = {
         header: [],
         datas: [],
     },
+    safeLockPsw: 'jiajiaoyi',
     getter: function(data,key) {
         var arr = key.split('.');
         var cur = data;
