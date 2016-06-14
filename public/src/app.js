@@ -660,23 +660,31 @@ var SectionOrder = Vue.extend({
         tmp.loaded = false;
         tmp.header = [
             {name:'UID',from:'_id'},
+            {name:'家长ID',from:'parent._id'},
+            {name:'家长手机',from:'parent.phone'},
+            {name:'家教ID',from:'teacher._id'},
+            {name:'家教手机',from:'teacher.phone'},
             {name:'年级',from:'grade'},
-            {name:'课程类型',from:'course'},
-            {name:'课程时长',from:'time',filter:'min'},
-            {name:'价格',from:'price',filter:'money'},
-            {name:'交通补贴',from:'subsidy',filter:'money'},
-            {name:'孩子年龄',from:'childAge',filter:'age'},
-            {name:'孩子性别',from:'childGender',filter:'radio/gender'},
-            {name:'订单类型',from:'type',filter:'radio/order_type'},
-            {name:'订单状态',from:'state',filter:'radio/order_state'},
-            {name:'标签',from:'tag'},
-            {name:'订单号',from:'orderNumber'},
-            {name:'取消者',from:'cancelPerson',filter:'radio/cancelPerson'},
-            {name:'是否显示',from:'isShow',filter:'bool'},
-            {name:'是否已上线',from:'hadPublish',filter:'bool'},
-            {name:'是否有评论',from:'hadComment',filter:'bool'},
+            {name:'课程',from:'course'},
             {name:'授课日期',from:'teachTime.date'},
             {name:'授课时段',from:'teachTime.time',filter:'radio/timeArea'},
+            {name:'授课时长',from:'time',filter:'min'},
+            {name:'单位价格',from:'price',filter:'money'},
+            {name:'交通补贴',from:'subsidy',filter:'money'},
+            {name:'专业辅导费',from:'professionalTutorPrice',filter:'money'},
+            {name:'抵减优惠券',from:'coupon.money',filter:'money'},
+            {name:'总价',from:'COMPUTED',filter:'money'},
+            {name:'孩子年龄',from:'childAge',filter:'age'},
+            {name:'孩子性别',from:'childGender',filter:'radio/gender'},
+            {name:'订单号',from:'orderNumber'},
+            {name:'订单类型',from:'type',filter:'radio/order_type'},
+            {name:'订单状态',from:'state',filter:'radio/order_state'},
+            {name:'保险单号',from:'insurance.insuranceNumber'},
+            {name:'下单时间',from:'created_at',filter:'date'},
+            {name:'最近修改时间',from:'updatedAt',filter:'date'},
+            {name:'确认时间',from:'sureTime',filter:'date'},
+            {name:'取消者',from:'cancelPerson',filter:'radio/cancelPerson'},
+            {name:'是否特价订单',from:'type',filter:'bool/discount'},
         ];
         
         tmp.actions = [];
@@ -1020,6 +1028,21 @@ var Store = {
     },
     safeLockPsw: 'jiajiaoyi',
     getter: function(data,key) {
+        if (key === 'COMPUTED') {
+            var price = data.price;
+            var addPrice = 0;
+            var professionalTutorPrice = data.professionalTutorPrice;
+            var subsidy = data.professionalTutorPrice;
+            var coupon_money = 0;
+            var time = data.time;
+
+            if (data.addPrice !== undefined)
+                addPrice = data.addPrice;
+            if (data.coupon !== undefined)
+                coupon_money = data.coupon.money; 
+            return (price + addPrice + professionalTutorPrice) * (time/60) + subsidy - coupon_money;
+        }
+
         var arr = key.split('.');
         var cur = data;
         for(var i=0;i!=arr.length;i++){
@@ -1057,9 +1080,11 @@ var Store = {
             case 'min':
             return str + ' 分钟';
             case 'money':
-            return str + ' 元';
+            return str.toFixed(2) + ' 元';
             case 'bool':
             return str?'是':'否';
+            case 'bool/discount':
+            return str === 1?'是':'否';
             case 'radio/order_type':
             return ['单次预约','特价订单','多次预约'][str];
             case 'radio/user_type':
