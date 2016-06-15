@@ -42,8 +42,11 @@ var SideBar = Vue.extend({
                     name:'未审核家教信息',
                     href:'/teacher/unchecked',
                 },{
-                    name:'已审核家教信息',
-                    href:'/teacher/checked',
+                    name:'通过审核的家教',
+                    href:'/teacher/pass',
+                },{
+                    name:'没通过审核的家教',
+                    href:'/teacher/notpass'
                 }]
             },{
                 name: '订单管理',
@@ -397,7 +400,7 @@ var SectionAllUser = Vue.extend({
     data: function() { 
         var tmp={};
         tmp.loaded = false;
-        tmp.header = Store.userHeader[0].concat(Store.userHeader[1],Store.userHeader[2]);
+        tmp.header = Store.userHeader;
         tmp.actions = ['查看'];
         
         this.reload();
@@ -447,7 +450,7 @@ var SectionParent = Vue.extend({
     data: function() { 
         var tmp={};
         tmp.loaded = false;
-        tmp.header = Store.userHeader[0].concat(Store.userHeader[1]);
+        tmp.header = Store.userHeader;
         tmp.actions = ['查看'];
         
         this.reload();
@@ -500,12 +503,15 @@ var SectionTeacher = Vue.extend({
     data: function() { 
         var tmp={};
         tmp.loaded = false;
-        tmp.header = Store.userHeader[0].concat(Store.userHeader[2]);
+        tmp.header = Store.userHeader;
         tmp.actions = ['查看'];
-        if (this.$route.params['type_id'] == 'checked'){
-            tmp.subtitle = '已审核家教';
+        if (this.$route.params['type_id'] == 'pass'){
+            tmp.subtitle = '通过审核的家教';
             this.reload(3);
-        } else if (this.$route.params['type_id'] == 'unchecked'){
+        } else if (this.$route.params['type_id'] == 'notpass') {
+            tmp.subtitle = '没通过审核的家教';
+            this.reload(4);
+        }　if (this.$route.params['type_id'] == 'unchecked'){
             tmp.subtitle = '未审核家教';
             tmp.actions.push('审核');
             this.reload(2);
@@ -673,7 +679,7 @@ var SectionOrder = Vue.extend({
             {name:'交通补贴',from:'subsidy',filter:'money'},
             {name:'专业辅导费',from:'professionalTutorPrice',filter:'money'},
             {name:'抵减优惠券',from:'coupon.money',filter:'money'},
-            {name:'总价',from:'COMPUTED',filter:'money'},
+            {name:'总价',from:'COMPUTED/SUM',filter:'money'},
             {name:'孩子年龄',from:'childAge',filter:'age'},
             {name:'孩子性别',from:'childGender',filter:'radio/gender'},
             {name:'订单号',from:'orderNumber'},
@@ -1028,19 +1034,30 @@ var Store = {
     },
     safeLockPsw: 'jiajiaoyi',
     getter: function(data,key) {
-        if (key === 'COMPUTED') {
-            var price = data.price;
-            var addPrice = 0;
-            var professionalTutorPrice = data.professionalTutorPrice;
-            var subsidy = data.professionalTutorPrice;
-            var coupon_money = 0;
-            var time = data.time;
+        switch (key) {
+            case 'COMPUTED/SUM':
+                var price = data.price;
+                var addPrice = 0;
+                var professionalTutorPrice = data.professionalTutorPrice;
+                var subsidy = data.professionalTutorPrice;
+                var coupon_money = 0;
+                var time = data.time;
 
-            if (data.addPrice !== undefined)
-                addPrice = data.addPrice;
-            if (data.coupon !== undefined)
-                coupon_money = data.coupon.money; 
-            return (price + addPrice + professionalTutorPrice) * (time/60) + subsidy - coupon_money;
+                if (data.addPrice !== undefined)
+                    addPrice = data.addPrice;
+                if (data.coupon !== undefined)
+                    coupon_money = data.coupon.money; 
+                return (price + addPrice + professionalTutorPrice) * (time/60) + subsidy - coupon_money;
+            case 'COMPUTED/SCORE':
+                if (data.teacherMessage !== undefined) {
+                    return data.teacherMessage.teachScore;
+                } else {
+                    return data.parentMessage.score;
+                }
+            case 'COMPUTED/ORDERCOUNT':
+                return '';
+            case 'COMPUTED/ORDERTIME':
+                return '';
         }
 
         var arr = key.split('.');
@@ -1085,6 +1102,8 @@ var Store = {
             return str?'是':'否';
             case 'bool/discount':
             return str === 1?'是':'否';
+            case 'radio/checkType':
+            return ['未审核','通过','不通过'][str];
             case 'radio/order_type':
             return ['单次预约','特价订单','多次预约'][str];
             case 'radio/user_type':
@@ -1162,48 +1181,45 @@ var Store = {
         document.body.removeChild(link);
     },
     userHeader:[
-        [
-                {name:'UID',from:'_id'},
-                {name:'姓名',from:'name'},
-                {name:'性别',from:'gender',filter:'radio/gender'},
-                {name:'电话',from:'phone'},
-                {name:'密码',from:'password'},
-                {name:'头像',from:'avatar',filter:'img'},
-                {name:'生日',from:'birthday',filter:'date'},
-                {name:'用户类型',from:'type',filter:'radio/user_type'},
-                {name:'地址',from:'position.address'},
-                {name:'所在城市',from:'position.city'}
-        ],[
-                {name:'孩子就读年级',from:'parentMessage.childGrade'},
-                {name:'孩子年龄',from:'parentMessage.childAge',filter:'age'},
-                {name:'家长参与订单数量',from:'parentMessage.bookCount'},
-                {name:'家长评分',from:'parentMessage.score'},
-                {name:'家长参与课程时间总计',from:'parentMesage.finishCourseTime'}
-        ],[
-                {name:'身份证号码',from:'teacherMessage.idCard'},
-                {name:'华南理工大学',from:'teacherMessage.school'},
-                {name:'专业',from:'teacherMessage.profession'},
-                {name:'授课经验（用户设定）',from:'teacherMessage.hadTeach'},
-                {name:'授课次数',from:'teacherMessage.teachCount'},
-                {name:'最短课程时间',from:'teacherMessage.minCourseTime',filter:'min'},
-                {name:'免费交通区间',from:'teacherMessage.freeTrafficTime',filter:'min'},
-                {name:'最大交通区间',from:'teacherMessage.maxTrafficTime',filter:'min'},
-                {name:'交通补贴',from:'teacherMessage.subsidy',filter:'money'},
-                {name:'简介',from:'teacherMessage.profile'},
-                {name:'综合评分',from:'teacherMessage.score'},
-                {name:'专业能力评分',from:'teacherMessage.ability'},
-                {name:'孩子喜欢程度评分',from:'teacherMessage.childAccept'},
-                {name:'准时态度评分',from:'teacherMessage.punctualScore'},
-                {name:'评论数',from:'teacherMessage.commentCount'},
-                {name:'折扣区间',from:'teacherMessage.disCountTime',filter:'min'},
-                {name:'已授课时间',from:'teacherMessage.teachTime',filter:'min'},
-                {name:'是否锁定',from:'teacherMessage.isLock',filter:'bool'},
-                {name:'是否审核',from:'teacherMessage.isCheck',filter:'bool'},
-                {name:'身份证照片',from:'teacherMessage.images.idCard',filter:'img'},
-                {name:'学生证照片',from:'teacherMessage.studentCard',filter:'img'},
-                {name:'官方认证照片',from:'teacherMessage.official',filter:'img'}
-        ]
-     ]
+            {name:'UID',from:'_id'},
+            {name:'ID',from:'_id'},
+            {name:'姓名',from:'name'},
+            {name:'性别',from:'gender',filter:'radio/gender'},
+            {name:'生日',from:'birthday',filter:'date'},
+            {name:'手机',from:'phone'},
+            {name:'身份证号',from:'teacherMessage.idCard'},
+            {name:'家庭地址',from:'position.address'},
+            {name:'用户类型',from:'type',filter:'radio/user_type'},
+            {name:'用户级别',from:'TODO'},
+            {name:'用户积分',from:'COMPUTED/SCORE'},
+            {name:'不良记录',from:'TODO'},
+            {name:'已完成订单数量',from:'COMPUTED/ORDERCOUNT'},
+            {name:'已完成订单时间',from:'COMPUTED/ORDERTIME',filter:'min'},
+            {name:'宝贝性别',from:'parentMessage.childGender',filter:'age'},
+            {name:'宝贝年龄',from:'parentMessage.childAge',filter:'age'},
+            {name:'宝贝年级',from:'parentMessage.childGrade'},
+            {name:'家教学校',from:'teacherMessage.school'},
+            {name:'家教年级',from:'TODO'},
+            {name:'支付宝账户',from:'TODO'},
+            {name:'微信账户',from:'TODO'},
+            {name:'开卡银行',from:'TODO'},
+            {name:'银行账号',from:'TODO'},
+            {name:'最小课程时间',from:'teacherMessage.minCourseTime',filter:'min'},
+            {name:'免费交通区间',from:'teacherMessage.freeTrafficTime',filter:'min'},
+            {name:'最远交通区间',from:'teacherMessage.maxTrafficTime',filter:'min'},
+            {name:'交通补贴',from:'teacherMessage.subsidy',filter:'money'},
+            {name:'教过孩子数量',from:'teacherMessage.teachCount'},
+            {name:'已授课时间',from:'teacherMessage.hadTeach'},
+            {name:'综合评分',from:'teacherMessage.score'},
+            {name:'专业能力评分',from:'teacherMessage.ability'},
+            {name:'宝贝喜爱程度评分',from:'teacherMessage.childAccept'},
+            {name:'准时态度评分',from:'teacherMessage.punctualScore'},
+            {name:'审核状态',from:'teacherMessage.checkType',filter:'radio/checkType'},
+            {name:'官方认证',from:'teacherMessage.official',filter:'img'},
+            {name:'身份证照片',from:'teacherMessage.images.idCard',filter:'img'},
+            {name:'学生证照片',from:'teacherMessage.studentCard',filter:'img'},
+            {name:'是否接受预定',from:'teacherMessage.isLock',filter:'bool'}
+        ],
 };
 
 router.beforeEach(function (transition) {
