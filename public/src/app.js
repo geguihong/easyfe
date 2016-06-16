@@ -344,9 +344,6 @@ var DirtyForm = Vue.extend({
     template:"<form onSubmit=\"return false;\">\n"+
                 "<div class=\"form-group\" v-for=\"item in form\">\n"+
                     "<label>{{item.name}}</label><span :class=\"{hidden:(models[$index]===item.default)}\">*</span>\n"+
-                    "<template v-if=\"item.filter===undefined\">\n"+
-                        "<br><input class=\"form-control\" type=\"text\" v-model=\"models[$index]\"/>\n"+
-                    "</template>\n"+
                     "<template v-if=\"item.filter==='uid'\">\n"+
                         "<p>{{models[$index]}}</p>\n"+
                     "</template>\n"+
@@ -360,11 +357,19 @@ var DirtyForm = Vue.extend({
                     "<template v-if=\"item.filter==='bool'\">\n"+
                         "<br><label class=\"radio-inline\"><input v-model=\"models[$index]\" type=\"radio\" :value=\"true\" />是</label><label class=\"radio-inline\"><input v-model=\"models[$index]\" type=\"radio\" :value=\"false\" />否</label>"+
                     "</template>\n"+
+                    "<template v-if=\"item.filter==='number'||item.filter==='number/100'||item.filter===undefined\">\n"+
+                        "<br><input class=\"form-control\" type=\"text\" v-model=\"models[$index]\"/>\n"+
+                    "</template>\n"+
                "</div>\n"+                   
                 "<safe-lock text=\"解锁修改按钮\"><button class=\"btn btn-default\" v-on:click=\"submit\" :disabled=\"submitLock\">修改</button>\n"+
                 "<span>（只改动带*号的数据）</span></safe-lock>\n"+
             "</form>",
     methods:{
+        reset: function() {
+            for(var i=0;i!=this.form.length;i++){
+                this.form[i].default = this.models[i];
+            }
+        },
         upload: function(e,index) {
             var self = this;
             var file = e.target.files[0];
@@ -398,8 +403,19 @@ var DirtyForm = Vue.extend({
             for(var i=0;i!=this.form.length;i++){
                 if(this.form[i].filter === 'uid') {
                     data = Store.setter(data,this.form[i].from,this.models[i]);
-                } else if(this.form[i].default !== this.models[i]) {
-                    data = Store.setter(data,this.form[i].from,this.models[i]);
+                    continue;
+                }
+
+                if(this.form[i].default !== this.models[i]) {
+                    var post;
+                    switch(this.form[i].filter) {
+                        case 'number/100':
+                        post = parseInt(this.models[i]*100);
+                        break;
+                        default:
+                        post = this.models[i];
+                    }
+                    data = Store.setter(data,this.form[i].from,post);
                     modified = true;
                 }
             }
@@ -422,7 +438,7 @@ var DirtyForm = Vue.extend({
                 if(data.result=='success'){
                     alert('修改成功');
                     if (self.isTmp) {
-                        router.go('/');
+                        self.reset();
                     } else {
                         location.reload();
                     }
@@ -1228,9 +1244,9 @@ var SectionUpdateVipEvent = Vue.extend({
                 {name:'活动编号',from:'vipEventId',default:Store.tmpForm._id,filter:'uid'},
                 {name:'活动标题',from:'title',default:Store.tmpForm.title},
                 {name:'活动说明',from:'detail',default:Store.tmpForm.detail},
-                {name:'积分预订',from:'score',default:Store.tmpForm.score},
-                {name:'现金预订',from:'money',default:Store.tmpForm.money},
-                {name:'最大人数',from:'allowCount',default:Store.tmpForm.allowCount},
+                {name:'积分预订',from:'score',default:Store.tmpForm.score.toString()},
+                {name:'现金预订',from:'money',default:(Store.tmpForm.money/100).toFixed(2),filter:'number/100'},
+                {name:'最大人数',from:'allowCount',default:Store.tmpForm.allowCount.toString()},
                 {name:'是否接受预定',from:'isPublish',default:Store.tmpForm.isPublish,filter:'bool'},
                 ]
         }
