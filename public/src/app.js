@@ -1,5 +1,6 @@
 //Bookmark:安全锁
 var safeLock = Vue.extend({
+    props: ['text'],
     data: function() {
         return {
             safeLock: true,
@@ -7,8 +8,8 @@ var safeLock = Vue.extend({
         };
     },
     template:"<template v-if=\"safeLock\">\n"+
-                        "<input placeholder=\"输入密码才能修改...\" type=\"password\" v-model=\"safeLockPsw\" />\n"+
-                        "<button class=\"btn btn-default\" v-on:click=\"unlock()\">解锁提交按钮</button>"+
+                        "<input placeholder=\"请输入安全码...\" type=\"password\" v-model=\"safeLockPsw\" />\n"+
+                        "<button class=\"btn btn-default\" v-on:click=\"unlock()\">{{text}}</button>"+
                     "</template>"+
                     "<template v-if=\"!safeLock\">\n"+
                         "<slot>按钮失效</slot>\n"+
@@ -121,6 +122,16 @@ var SideBar = Vue.extend({
                     name:'修改首页广告',
                     href:'/advertise'
                 }]
+            },{
+                name: '会员活动',
+                state: '-',
+                items: [{
+                    name: '发布会员活动',
+                    href: '/createEvent'
+                },{
+                    name: '会员活动发布情况',
+                    href: '/VipEvent',
+                }]
             }]
         }
     },
@@ -142,28 +153,72 @@ var Modal = Vue.extend({
     data: function() {
         return Store.modal;
     },
-    template:"<div class=\"modal fade\" id=\"app-modal\" tabindex=\"-1\" role=\"dialog\" aria-labelledby=\"myModalLabel\">\n                <div class=\"modal-dialog\" role=\"document\">\n                    <div class=\"modal-content\">\n                        <div class=\"modal-header\">\n                            <button type=\"button\" class=\"close\" data-dismiss=\"modal\" aria-label=\"Close\"><span aria-hidden=\"true\">&times;</span></button>\n                            <h4 class=\"modal-title\">详情</h4>\n                        </div>\n                        <div class=\"modal-body\">\n                            <div v-if=\"$index > 0\" v-for=\"item in datas\" class=\"bundle\" track-by=\"$index\">\n                                <p class=\"left\"><strong>{{header[$index].name}}</strong></p>\n                                <p class=\"right\" v-if=\"header[$index].filter!=='img'\">{{item}}</p>\n                                <img class=\"right\" v-if=\"header[$index].filter==='img'\" :src=\"item\" />\n                            </div>   \n                        </div>\n                    </div>\n                </div>\n            </div>",
+    template:'<div class=\"modal fade\" id=\"app-modal\" tabindex=\"-1\" role=\"dialog\" aria-labelledby=\"myModalLabel\">'+
+                 '<div class=\"modal-dialog\" role=\"document\">'+
+                    '<div class=\"modal-content\">'+
+                        '<div class=\"modal-header\">'+                           
+                            '<button type=\"button\" class=\"close\" data-dismiss=\"modal\" aria-label=\"Close\"><span aria-hidden=\"true\">&times;</span></button>'+
+                            '<h4 class=\"modal-title\">详情</h4>'+                       
+                        '</div>'+
+                        '<div class=\"modal-body\" v-if=\"type === \'table\' \">'+
+                            '<div class=\"table-responsive\">'+                    
+                                '<table class=\"table table-hover\">'+                      
+                                    '<thead><tr><th v-for=\"item in header\" track-by=\"$index\">{{item}}</th></tr></thead>'+                        
+                                    '<tbody><tr v-for=\"item in datas\" track-by=\"$index\"><td v-for=\"cell in item\" track-by=\"$index\">{{cell}}</td></tr></tbody>'+
+                                '</table>'+
+                             '</div>'+
+                         '</div>'+
+                        '<div class=\"modal-body\" v-else>'+
+                            '<div v-if=\"$index > 0\" v-for=\"item in datas\" class=\"bundle\" track-by=\"$index\">'+   
+                                '<p class=\"left\"><strong>{{header[$index].name}}</strong></p>'+    
+                                '<p class=\"right\" v-if=\"header[$index].filter!==\'img\'\" >{{item}}</p>'+
+                                '<img class=\"right\" v-if=\"header[$index].filter===\'img\'\" :src=\"item\" />'+
+                            '</div>'+
+                         '</div>'+
+                    '</div>'+
+                '</div>'+
+            '</div>',
 });
 Vue.component('modal', Modal);
 
 //Bookmark:动作行
 var ActionRow = Vue.extend({
-    props:['postData','actions'],
+    props:['postData','actions', 'preData'],
     template:'<tr><td><a v-for="action in actions" v-on:click="emit(action)">{{action}}</a></td><td v-if="$index > 0" v-for="cell in postData" track-by="$index">{{cell}}</td></tr>',
     methods:{
-        check: function(url,para,id,isShow) {            
+        checkOrder: function(id,isShow) {            
             var tmp = {
                 token: Store.token,
             };
-            tmp[para] = id;
-            if (isShow === 'show') {
-                tmp.isShow = true;
-            } else if (isShow === 'hide'){
-                tmp.isShow = false;
-            }
+            tmp['orderId'] = id;
+            tmp['isShow'] = isShow;
             
             $.ajax({
-                url: Store.rootUrl+url,
+                url: Store.rootUrl+'/Order/Discount/Check',
+                dataType: 'json',
+                data:JSON.stringify(tmp),
+                type:'POST',
+                contentType: "application/json; charset=utf-8"
+            }).done(function(data, status, jqXHR){
+                if(data.result=='success'){
+                    location.reload();
+                    alert('执行成功！');
+                }else{
+                    alert('执行失败！');
+                }
+            }).fail(function(data, status, jqXHR){
+               alert('服务器请求超时！');
+            });
+        },
+        checkTeacher: function(id,checkType) {            
+            var tmp = {
+                token: Store.token,
+            };
+            tmp['orderId'] = id;
+            tmp['checkType'] = checkType;
+            
+            $.ajax({
+                url: Store.rootUrl+'/Order/Discount/Check',
                 dataType: 'json',
                 data:JSON.stringify(tmp),
                 type:'POST',
@@ -181,16 +236,30 @@ var ActionRow = Vue.extend({
         },
         emit: function(event){
             switch(event) {
-                case '审核':
-                this.check('/Teacher/Check','teacherId',this.postData[0]);
+                case '通过':
+                this.checkTeacher(this.postData[0],1);
+                break;
+                case '驳回':
+                this.checkTeacher(this.postData[0],2);
                 break;
                 case '上线':
-                this.check('/Order/Discount/Check','orderId',this.postData[0],'show');
+                this.checkOrder(this.postData[0],true);
                 break;
                 case '下线':
-                this.check('/Order/Discount/Check','orderId',this.postData[0],"hide");
+                this.checkOrder(this.postData[0],false);
+                break;
+                case '预定列表':
+                Store.modal.type = 'table';
+                Store.modal.header = ['1','2'];
+                Store.modal.datas = [[1,2],[1,2]];
+                $('#app-modal').modal();
+                break;
+                case '修改':
+                Store.tmpForm = this.preData;
+                router.go('/UpdateVipEvent');
                 break;
                 case '查看':
+                Store.modal.type = 'object';
                 Store.modal.datas = this.postData;
                 $('#app-modal').modal();
                 break;
@@ -206,15 +275,23 @@ var PaginationTable = Vue.extend({
     data:function() {
         Store.modal.datas = [];
         Store.modal.header = this.header;
-        tmpPages = this.chunk(this.postDatas,10);
+
+        var datas = [];
+        for(var i=0;i!==this.postDatas.length;i++) {
+            datas.push({post:this.postDatas[i],trace_id:i});
+        }
+
+        tmpPages = this.chunk(datas,10);
         
         return {
             pages: tmpPages,
             currentPage:0,
             keyword: '',
+            preDatas: Store.tmpPreDatas,
+            datas: datas,
         };
     },
-    template: "<form class=\"form-inline\" onSubmit=\"return false\">\n                    <div class=\"form-group\">\n                        <input type=\"text\" class=\"form-control\" v-model=\"keyword\">\n                    </div>\n                    <button v-on:click=\"search()\" type=\"submit\" class=\"btn btn-default\">搜索</button>\n                    <button v-on:click=\"exportTable()\" style=\"float:right;\" type=\"submit\" class=\"btn btn-default\">全部导出</button>\n                </form>\n                <div class=\"table-responsive\">\n                    <table class=\"table table-hover\">\n                        <thead><tr><th>操作</th><th v-if=\"$index > 0\" v-for=\"cell in header\">{{cell.name}}</th></tr></thead>\n                        <tbody><tr is=\"action-row\" v-for=\"item in pages[currentPage]\" :post-data=\"item\" :actions=\"actions\"></tr></tbody>\n                    </table>\n                </div>\n                <ul class=\"pagination\"><li v-for=\"page in pages\" v-on:click=\"changePage($index)\" :class=\"{'active':$index===currentPage}\"><a>{{$index+1}}</a></li></ul>",
+    template: "<form class=\"form-inline\" onSubmit=\"return false\">\n                    <div class=\"form-group\">\n                        <input type=\"text\" class=\"form-control\" v-model=\"keyword\">\n                    </div>\n                    <button v-on:click=\"search()\" type=\"submit\" class=\"btn btn-default\">搜索</button>\n                    <div style=\"float:right;\"><safe-lock text=\"解锁导出按钮\"><button v-on:click=\"exportTable()\" type=\"submit\" class=\"btn btn-default\">全部导出</button></safe-lock></div>\n                </form>\n                <div class=\"table-responsive\">\n                    <table class=\"table table-hover\">\n                        <thead><tr><th>操作</th><th v-if=\"$index > 0\" v-for=\"cell in header\">{{cell.name}}</th></tr></thead>\n                        <tbody><tr is=\"action-row\" v-for=\"item in pages[currentPage]\" :pre-data=\"preDatas[item.trace_id]\" :post-data=\"item.post\" :actions=\"actions\"></tr></tbody>\n                    </table>\n                </div>\n                <ul class=\"pagination\"><li v-for=\"page in pages\" v-on:click=\"changePage($index)\" :class=\"{'active':$index===currentPage}\"><a>{{$index+1}}</a></li></ul>",
     methods:{
         chunk: function (array, size) {
             var result = [];
@@ -233,21 +310,21 @@ var PaginationTable = Vue.extend({
         },
         search: function() {
             if (this.keyword === '') {
-                this.pages = this.chunk(this.postDatas,10);
+                this.pages = this.chunk(this.datas,10);
                 this.currentPage = 0;
                 return ;
             } 
             
-            var nPD = [];
-            for(var i in this.postDatas){
-                for(var j in this.postDatas[i]){
-                    if((this.postDatas[i][j]).toString().indexOf(this.keyword) >= 0){
-                        nPD.push(this.postDatas[i]);
+            var nD = [];
+            for(var i in this.datas){
+                for(var j in this.datas[i].post){
+                    if(this.datas[i].post[j].toString().indexOf(this.keyword) >= 0){
+                        nD.push(this.datas[i]);
                         break;
                     }
                 }
             }
-            this.pages = this.chunk(nPD,10);
+            this.pages = this.chunk(nD,10);
             this.currentPage = 0;
         }
     }
@@ -256,7 +333,7 @@ Vue.component('pagination-table',PaginationTable);
 
 //BookMark:脏检查表单
 var DirtyForm = Vue.extend({
-    props:['form','api','qnToken'],
+    props:['form','api','qnToken','isTmp'],
     data:function() {
         var tmp = {models:[],submitLock:false};
         for(var i=0;i!=this.form.length;i++){
@@ -270,6 +347,9 @@ var DirtyForm = Vue.extend({
                     "<template v-if=\"item.filter===undefined\">\n"+
                         "<br><input class=\"form-control\" type=\"text\" v-model=\"models[$index]\"/>\n"+
                     "</template>\n"+
+                    "<template v-if=\"item.filter==='uid'\">\n"+
+                        "<p>{{models[$index]}}</p>\n"+
+                    "</template>\n"+
                     "<template v-if=\"item.filter==='textarea'\">\n"+
                         "<textarea class=\"form-control\" rows=\"3\" v-model=\"models[$index]\"></textarea>\n"+
                     "</template>\n"+
@@ -277,9 +357,12 @@ var DirtyForm = Vue.extend({
                         "<br><img :src=\"models[$index]\" alt=\"暂无图片\">\n"+
                         "<input type=\"file\" v-on:change=\"upload($event,$index)\"/>\n"+
                     "</template>\n"+
+                    "<template v-if=\"item.filter==='bool'\">\n"+
+                        "<br><label class=\"radio-inline\"><input v-model=\"models[$index]\" type=\"radio\" :value=\"true\" />是</label><label class=\"radio-inline\"><input v-model=\"models[$index]\" type=\"radio\" :value=\"false\" />否</label>"+
+                    "</template>\n"+
                "</div>\n"+                   
-                "<button class=\"btn btn-default\" v-on:click=\"submit\" :disabled=\"submitLock\">修改</button>\n"+
-                "<span>（只改动带*号的数据）</span>\n"+
+                "<safe-lock text=\"解锁修改按钮\"><button class=\"btn btn-default\" v-on:click=\"submit\" :disabled=\"submitLock\">修改</button>\n"+
+                "<span>（只改动带*号的数据）</span></safe-lock>\n"+
             "</form>",
     methods:{
         upload: function(e,index) {
@@ -313,7 +396,9 @@ var DirtyForm = Vue.extend({
             var data={};
             var modified = false;
             for(var i=0;i!=this.form.length;i++){
-                if(this.form[i].default !== this.models[i]) {
+                if(this.form[i].filter === 'uid') {
+                    data = Store.setter(data,this.form[i].from,this.models[i]);
+                } else if(this.form[i].default !== this.models[i]) {
                     data = Store.setter(data,this.form[i].from,this.models[i]);
                     modified = true;
                 }
@@ -335,8 +420,12 @@ var DirtyForm = Vue.extend({
                 contentType: "application/json; charset=utf-8"
             }).done(function(data, status, jqXHR){
                 if(data.result=='success'){
-                    location.reload();
                     alert('修改成功');
+                    if (self.isTmp) {
+                        router.go('/');
+                    } else {
+                        location.reload();
+                    }
                 }else{
                     alert('修改失败');
                 }
@@ -414,6 +503,7 @@ var SectionAllUser = Vue.extend({
                 dataType: 'json'
             }).done(function(data, status, jqXHR){
                 if(data.result=="success"){
+                    Store.tmpPreDatas = data.data;
                     self.postDatas = [];
                         for(var i in data.data){
                             var x = data.data[i];
@@ -464,6 +554,7 @@ var SectionParent = Vue.extend({
                 dataType: 'json'
             }).done(function(data, status, jqXHR){
                 if(data.result=="success"){
+                    Store.tmpPreDatas = data.data;
                     self.postDatas = [];
                         for(var i in data.data){
                             var x = data.data[i];
@@ -513,7 +604,7 @@ var SectionTeacher = Vue.extend({
             this.reload(4);
         }　if (this.$route.params['type_id'] == 'unchecked'){
             tmp.subtitle = '未审核家教';
-            tmp.actions.push('审核');
+            tmp.actions.push('通过','驳回');
             this.reload(2);
         }
         return tmp;
@@ -526,6 +617,7 @@ var SectionTeacher = Vue.extend({
                 dataType: 'json'
             }).done(function(data, status, jqXHR){
                 if(data.result=="success"){
+                    Store.tmpPreDatas = data.data;
                     self.postDatas = [];
                         for(var i in data.data){
                             var x = data.data[i];
@@ -560,14 +652,13 @@ var SectionTeacher = Vue.extend({
 //route:sendMessage
 var SectionSendMessage = Vue.extend({
     data: function() {
-        Store.modalData= '1';
         return {
             type: '1',
             content: '默认消息',
             submitLock: false,
         }
     },
-    template: "<ol class=\"breadcrumb\"><li>消息中心</li><li>发送消息</li></ol>\n                <div>\n                    <form onSubmit=\"return false;\">\n                        <div class=\"form-group\">\n                            <label>发送内容</label><textarea class=\"form-control\" rows=\"3\" v-model=\"content\"></textarea>\n                        </div>\n                        <div class=\"form-group\">\n                            <label>发送对象</label><br />\n                            <label class=\"radio-inline\"><input v-model=\"type\" type=\"radio\" value=\"1\" />家教</label>\n                            <label class=\"radio-inline\"><input v-model=\"type\" type=\"radio\" value=\"2\" />家长</label>\n                            <label class=\"radio-inline\"><input v-model=\"type\" type=\"radio\" value=\"3\" />全部</label>\n                        </div>\n                        <button class=\"btn btn-default\" v-on:click=\"submit\" :disabled=\"submitLock\">提交消息</button>\n                    </form>\n                </div>",
+    template: "<ol class=\"breadcrumb\"><li>消息中心</li><li>发送消息</li></ol>\n                <div>\n                    <form onSubmit=\"return false;\">\n                        <div class=\"form-group\">\n                            <label>发送内容</label><textarea class=\"form-control\" rows=\"3\" v-model=\"content\"></textarea>\n                        </div>\n                        <div class=\"form-group\">\n                            <label>发送对象</label><br />\n                            <label class=\"radio-inline\"><input v-model=\"type\" type=\"radio\" value=\"1\" />家教</label>\n                            <label class=\"radio-inline\"><input v-model=\"type\" type=\"radio\" value=\"2\" />家长</label>\n                            <label class=\"radio-inline\"><input v-model=\"type\" type=\"radio\" value=\"3\" />全部</label>\n                        </div>\n                        <safe-lock text=\"解锁发送按钮\"><button class=\"btn btn-default\" v-on:click=\"submit\" :disabled=\"submitLock\">提交消息</button></safe-lock>\n                    </form>\n                </div>",
     methods: {
         submit: function () {
             this.submitLock = true;
@@ -596,64 +687,6 @@ var SectionSendMessage = Vue.extend({
             });
         }
     },
-})
-
-//route:feedback
-var SectionFeedback = Vue.extend({
-    route: {
-        canReuse: false
-    },
-    data: function() { 
-        var tmp={};
-        tmp.loaded = false;
-        tmp.header = [
-                {name:'UID',from:'_id'},
-                {name:'反馈类型',from:'type',filter:'radio/feedback'},
-                {name:'反馈内容',from:'content'},
-        ];
-        tmp.actions = ['查看'];
-        tmp.subtitle = ['所有反馈','需求反馈','应用反馈','投诉反馈'][this.$route.params['type_id']];
-        
-        this.reload(this.$route.params['type_id']);
-        return tmp;
-    },
-    methods: {
-        reload: function(type) {
-            var self = this;
-            $.ajax({
-                url:Store.rootUrl+'/feedback?type='+type+'&token='+Store.token,
-                dataType: 'json'
-            }).done(function(data, status, jqXHR){
-                if(data.result=="success"){
-                    self.postDatas = [];
-                    for(var i in data.data){
-                        var x = data.data[i];
-                        var postData = [];
-                        for(var j in self.header) {
-                            var str = Store.getter(x,self.header[j].from);
-                            if (str !== undefined ) {
-                                if (self.header[j].filter) {
-                                    str = Store.filter(str,self.header[j].filter);
-                                }
-                            } else {
-                                str = '';
-                            }
-                            postData.push(str);
-                        }
-                        self.postDatas.push(postData);
-                    }
-                    self.loaded = true;
-                }else{
-                    alert('获取数据失败');
-                }
-                
-            }).fail(function(data, status, jqXHR){
-                alert('服务器请求超时');
-            });
-        }
-    },
-    template: '<ol class="breadcrumb"><li>消息中心</li><li>{{subtitle}}</li></ol>'+
-                '<div><pagination-table v-if="loaded" :post-datas="postDatas" :header="header" :actions="actions"></pagination-table></div>'
 })
 
 //route:order
@@ -778,6 +811,7 @@ var SectionOrder = Vue.extend({
                 dataType: 'json'
             }).done(function(data, status, jqXHR){
                 if(data.result=="success"){
+                    Store.tmpPreDatas = data.data;
                     self.postDatas = [];
                     for(var i in data.data){
                         var x = data.data[i];
@@ -945,7 +979,7 @@ var SectionGuideMap = Vue.extend({
                         "<button class=\"btn btn-default\" v-on:click=\"add()\">添加新广告</button>\n"+
                     "</div>\n"+
                     "<div class=\"creater\">\n"+
-                        "<safe-lock><button class=\"btn btn-default\" v-on:click=\"submit()\">提交变更</button><span style=\"color:red;\">（注意：所有变更提交之后才生效）</span></safe-lock>\n"+
+                        "<safe-lock text=\"解锁修改按钮\"><button class=\"btn btn-default\" v-on:click=\"submit()\">提交变更</button><span style=\"color:red;\">（注意：所有变更提交之后才生效）</span></safe-lock>\n"+
                     "</div>",
 })
 
@@ -983,6 +1017,229 @@ var SectionAdvertise = Vue.extend({
                 '<div><dirty-form v-if="loaded" :form="form" api="/OnlineParams" :qn-token="qnToken"></dirty-form></div>',
 })
 
+//route:Feedback
+var SectionFeedback = Vue.extend({
+    route: {
+        canReuse: false
+    },
+    data: function() { 
+        var tmp={};
+        tmp.loaded = false;
+        tmp.header = [
+                {name:'UID',from:'_id'},
+                {name:'ID',from:'TODO'},
+                {name:'用户类型',from:'TODO'},
+                {name:'姓名',from:'TODO'},
+                {name:'手机',from:'TODO'},
+                {name:'反馈类型',from:'TODO'},
+                {name:'反馈内容',from:'TODO'},
+                {name:'提交时间',from:'TODO'},
+        ];
+        tmp.actions = ['查看'];
+        tmp.subtitle = ['所有反馈','需求反馈','应用反馈','投诉反馈'][this.$route.params['type_id']];
+
+        
+        this.reload(this.$route.params['type_id']);
+        return tmp;
+    },
+    methods: {
+        reload: function(type) {
+            var self = this;
+            $.ajax({
+                url:Store.rootUrl+'/feedback?type='+type+'&token='+Store.token,
+                dataType: 'json'
+            }).done(function(data, status, jqXHR){
+                if(data.result=="success"){
+                    Store.tmpPreDatas = data.data;
+                    self.postDatas = [];
+                    for(var i in data.data){
+                        var x = data.data[i];
+                        var postData = [];
+                        for(var j in self.header) {
+                            var str = Store.getter(x,self.header[j].from);
+                            if (str !== undefined ) {
+                                if (self.header[j].filter) {
+                                    str = Store.filter(str,self.header[j].filter);
+                                }
+                            } else {
+                                str = '';
+                            }
+                            postData.push(str);
+                        }
+                        self.postDatas.push(postData);
+                    }
+                    self.loaded = true;
+                }else{
+                    alert('获取数据失败');
+                }
+                
+            }).fail(function(data, status, jqXHR){
+                alert('服务器请求超时');
+            });
+        }
+    },
+    template: '<ol class="breadcrumb"><li>消息中心</li><li>{{subtitle}}</li></ol>'+
+                '<div><pagination-table v-if="loaded" :post-datas="postDatas" :header="header" :actions="actions"></pagination-table></div>'
+})
+
+//route:CreateEvent
+var SectionCreateEvent = Vue.extend({
+    data: function() {
+        return {
+            token: Store.token,
+            title: '标题',
+            detail: '详情',
+            score: '',
+            money: '',
+            isPublish: '0',
+            allowCount: '',
+            submitLock: false,
+        }
+    },
+    template: '<ol class=\"breadcrumb\"><li>会员活动</li><li>会员活动发布</li></ol>'+
+                   '<div>'+
+                        '<form onSubmit=\"return false;\">'+
+                            '<div class=\"form-group\">'+                         
+                                '<label>活动标题</label><input class=\"form-control\" type="text" v-model=\"title\">'+
+                            '</div>'+
+                            '<div class=\"form-group\">'+                         
+                                '<label>活动说明</label><textarea class=\"form-control\" rows=\"3\" v-model=\"detail\"></textarea>'+
+                            '</div>'+
+                            '<div class=\"form-group\">'+                         
+                                '<label>积分预定</label><input class=\"form-control\" type="text" v-model=\"score\">'+
+                            '</div>'+
+                            '<div class=\"form-group\">'+                         
+                                '<label>现金预定</label><input class=\"form-control\" type="text" v-model=\"money\">'+
+                            '</div>'+
+                            '<div class=\"form-group\">'+                       
+                                '<label>活动人数上限</label><input class=\"form-control\" type="text" v-model=\"allowCount\">'+
+                            '</div>'+
+                            '<div class=\"form-group\">'+
+                                '<label>是否接受预定</label><br /><label class=\"radio-inline\"><input v-model=\"isPublish\" type=\"radio\" value=\"1\" />是</label><label class=\"radio-inline\"><input v-model=\"isPublish\" type=\"radio\" value=\"0\" />否</label>'+
+                            '</div>'+
+                            '<safe-lock text=\"解锁发布按钮\"><button class=\"btn btn-default\" v-on:click=\"submit\" :disabled=\"submitLock\">发布活动</button></safe-lock>'+
+                        '</form>'+
+                    '</div>',
+    methods: {
+        submit: function () {
+            this.submitLock = true;
+            tmp={};
+            tmp.title = this.title;
+            tmp.detail = this.detail;
+            tmp.score = this.score;
+            tmp.money = parseInt(this.money * 100);
+            tmp.allowCount = this.allowCount;
+            tmp.isPublish = this.isPublish === '1' ?true:false;
+
+            tmp.token = Store.token;
+            
+            var self = this;
+            $.ajax({
+                url: Store.rootUrl+'/VipEvent',
+                dataType: 'json',
+                data:JSON.stringify(tmp),
+                type:'POST',
+                contentType: "application/json; charset=utf-8"
+            }).done(function(data, status, jqXHR){
+                if(data.result=='success'){
+                    alert('活动发布成功');
+                }else{
+                    alert('活动发布失败');
+                }
+                self.submitLock = false;
+            }).fail(function(data, status, jqXHR){
+               alert('服务器请求超时');
+               self.submitLock = false;
+            });
+        }
+    },
+})
+
+
+//route:Event
+var SectionVipEvent = Vue.extend({
+    data: function() { 
+        var tmp={};
+        tmp.loaded = false;
+        tmp.header = [
+                {name:'UID',from:'_id'},
+                {name:'活动编号',from:'_id'},
+                {name:'活动标题',from:'title'},
+                {name:'发布时间',from:'created_at',filter:'date'},
+                {name:'活动说明',from:'detail'},
+                {name:'积分预订',from:'score'},
+                {name:'现金预订',from:'money',filter:'money/100'},
+                {name:'最大人数',from:'allowCount'},
+                {name:'已预约人数',from:'bookCount'},
+                {name:'活动状态',from:'COMPUTED/EVENTSTATE'},
+        ];
+        tmp.actions = ['查看','预定列表','修改'];
+        tmp.subtitle = ['所有反馈','需求反馈','应用反馈','投诉反馈'][this.$route.params['type_id']];
+
+        
+        this.reload(this.$route.params['type_id']);
+        return tmp;
+    },
+    methods: {
+        reload: function(type) {
+            var self = this;
+            $.ajax({
+                url:Store.rootUrl+'/VipEvent?token='+Store.token,
+                dataType: 'json',
+            }).done(function(data, status, jqXHR){
+                if(data.result=="success"){
+                    Store.tmpPreDatas = data.data;
+                    self.postDatas = [];
+                    for(var i in data.data){
+                        var x = data.data[i];
+                        var postData = [];
+                        for(var j in self.header) {
+                            var str = Store.getter(x,self.header[j].from);
+                            if (str !== undefined ) {
+                                if (self.header[j].filter) {
+                                    str = Store.filter(str,self.header[j].filter);
+                                }
+                            } else {
+                                str = '';
+                            }
+                            postData.push(str);
+                        }
+                        self.postDatas.push(postData);
+                    }
+                    self.loaded = true;
+                }else{
+                    alert('获取数据失败');
+                }
+                
+            }).fail(function(data, status, jqXHR){
+                alert('服务器请求超时');
+            });
+        }
+    },
+    template: '<ol class="breadcrumb"><li>会员活动</li><li>会员活动发布情况</li></ol>'+
+                '<div><pagination-table v-if="loaded" :post-datas="postDatas" :header="header" :actions="actions"></pagination-table></div>'
+})
+
+//route:UpdateVipEvent
+var SectionUpdateVipEvent = Vue.extend({
+    data: function() {
+        return {
+            form: [
+                {name:'活动编号',from:'vipEventId',default:Store.tmpForm._id,filter:'uid'},
+                {name:'活动标题',from:'title',default:Store.tmpForm.title},
+                {name:'活动说明',from:'detail',default:Store.tmpForm.detail},
+                {name:'积分预订',from:'score',default:Store.tmpForm.score},
+                {name:'现金预订',from:'money',default:Store.tmpForm.money},
+                {name:'最大人数',from:'allowCount',default:Store.tmpForm.allowCount},
+                {name:'是否接受预定',from:'isPublish',default:Store.tmpForm.isPublish,filter:'bool'},
+                ]
+        }
+    },
+    template: '<ol class="breadcrumb"><li>修改</li><li>修改会员活动</li></ol>'+
+                '<div><dirty-form :form="form" api="/VipEvent/Update" :is-tmp="true"></dirty-form></div>',
+})
+
+
 //路由
 var router = new VueRouter()
 router.map({
@@ -1018,6 +1275,15 @@ router.map({
             },
             '/advertise': {
                 component: SectionAdvertise,
+            },
+            '/createEvent': {
+                component: SectionCreateEvent,
+            },
+            '/VipEvent': {
+                component: SectionVipEvent,
+            },
+            '/UpdateVipEvent': {
+                component: SectionUpdateVipEvent,
             }
         }
     },
@@ -1031,7 +1297,9 @@ var Store = {
     modal: {
         header: [],
         datas: [],
+        type: 'object',
     },
+    tmpForm: null,
     safeLockPsw: 'jiajiaoyi',
     getter: function(data,key) {
         switch (key) {
@@ -1054,10 +1322,28 @@ var Store = {
                 } else {
                     return data.parentMessage.score;
                 }
+            case 'COMPUTED/EVENTSTATE':
+                if( data.isPublish ) {
+                    if (data.bookCount < data.allowCount) {
+                        return '接受预定/未订满';
+                    } else {
+                        return '接受预定/已订满';
+                    }
+                } else {
+                    return '已下线';
+                }
             case 'COMPUTED/ORDERCOUNT':
-                return '';
+                if (data.teacherMessage !== undefined) {
+                    return '!';
+                } else {
+                    return data.parentMessage.bookCount;
+                }
             case 'COMPUTED/ORDERTIME':
-                return '';
+                if (data.teacherMessage !== undefined) {
+                    return data.teacherMessage.teachTime;
+                } else {
+                    return data.parentMessage.finishCourseTime;
+                }
         }
 
         var arr = key.split('.');
@@ -1098,6 +1384,8 @@ var Store = {
             return str + ' 分钟';
             case 'money':
             return str.toFixed(2) + ' 元';
+            case 'money/100':
+            return (str/100).toFixed(2) + ' 元';
             case 'bool':
             return str?'是':'否';
             case 'bool/discount':
@@ -1218,7 +1506,9 @@ var Store = {
             {name:'官方认证',from:'teacherMessage.official',filter:'img'},
             {name:'身份证照片',from:'teacherMessage.images.idCard',filter:'img'},
             {name:'学生证照片',from:'teacherMessage.studentCard',filter:'img'},
-            {name:'是否接受预定',from:'teacherMessage.isLock',filter:'bool'}
+            {name:'是否接受预定',from:'teacherMessage.isLock',filter:'bool'},
+            {name:'钱包余额',from:'',filter:'money'},
+            {name:'累计提款金额',from:'',filter:'money'}
         ],
 };
 
