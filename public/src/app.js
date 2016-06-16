@@ -1043,13 +1043,13 @@ var SectionFeedback = Vue.extend({
         tmp.loaded = false;
         tmp.header = [
                 {name:'UID',from:'_id'},
-                {name:'ID',from:'TODO'},
+                {name:'ID',from:'_id'},
                 {name:'用户类型',from:'TODO'},
                 {name:'姓名',from:'TODO'},
                 {name:'手机',from:'TODO'},
-                {name:'反馈类型',from:'TODO'},
-                {name:'反馈内容',from:'TODO'},
-                {name:'提交时间',from:'TODO'},
+                {name:'反馈类型',from:'type',filter:'radio/feedback'},
+                {name:'反馈内容',from:'content'},
+                {name:'提交时间',from:'created_at',filter:'date'},
         ];
         tmp.actions = ['查看'];
         tmp.subtitle = ['所有反馈','需求反馈','应用反馈','投诉反馈'][this.$route.params['type_id']];
