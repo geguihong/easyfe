@@ -201,8 +201,8 @@ var ActionRow = Vue.extend({
                 contentType: "application/json; charset=utf-8"
             }).done(function(data, status, jqXHR){
                 if(data.result=='success'){
-                    location.reload();
                     alert('执行成功！');
+                    location.reload();
                 }else{
                     alert('执行失败！');
                 }
@@ -214,19 +214,19 @@ var ActionRow = Vue.extend({
             var tmp = {
                 token: Store.token,
             };
-            tmp['orderId'] = id;
+            tmp['teacherId'] = id;
             tmp['checkType'] = checkType;
             
             $.ajax({
-                url: Store.rootUrl+'/Order/Discount/Check',
+                url: Store.rootUrl+'/Teacher/Check',
                 dataType: 'json',
                 data:JSON.stringify(tmp),
                 type:'POST',
                 contentType: "application/json; charset=utf-8"
             }).done(function(data, status, jqXHR){
                 if(data.result=='success'){
-                    location.reload();
                     alert('执行成功！');
+                    location.reload();
                 }else{
                     alert('执行失败！');
                 }
@@ -236,6 +236,9 @@ var ActionRow = Vue.extend({
         },
         emit: function(event){
             switch(event) {
+                case '反悔':
+                this.checkTeacher(this.postData[0],0);
+                break;
                 case '通过':
                 this.checkTeacher(this.postData[0],1);
                 break;
@@ -614,9 +617,11 @@ var SectionTeacher = Vue.extend({
         tmp.actions = ['查看'];
         if (this.$route.params['type_id'] == 'pass'){
             tmp.subtitle = '通过审核的家教';
+            tmp.actions.push('反悔');
             this.reload(3);
         } else if (this.$route.params['type_id'] == 'notpass') {
             tmp.subtitle = '没通过审核的家教';
+            tmp.actions.push('反悔');
             this.reload(4);
         }　if (this.$route.params['type_id'] == 'unchecked'){
             tmp.subtitle = '未审核家教';
@@ -1519,9 +1524,9 @@ var Store = {
             {name:'宝贝喜爱程度评分',from:'teacherMessage.childAccept'},
             {name:'准时态度评分',from:'teacherMessage.punctualScore'},
             {name:'审核状态',from:'teacherMessage.checkType',filter:'radio/checkType'},
-            {name:'官方认证',from:'teacherMessage.official',filter:'img'},
+            {name:'官方认证',from:'teacherMessage.images.official',filter:'img'},
             {name:'身份证照片',from:'teacherMessage.images.idCard',filter:'img'},
-            {name:'学生证照片',from:'teacherMessage.studentCard',filter:'img'},
+            {name:'学生证照片',from:'teacherMessage.images.studentCard',filter:'img'},
             {name:'是否接受预定',from:'teacherMessage.isLock',filter:'bool'},
             {name:'钱包余额',from:'',filter:'money'},
             {name:'累计提款金额',from:'',filter:'money'}
