@@ -182,36 +182,6 @@ var Modal = Vue.extend({
     data: function() {
         return Store.modal;
     },
-    methods: {
-        // updatePrice: function($index) {
-        //     var new_price = Store.modal.teachPriceHelper.vm[$index];
-        //     if (new_price === undefined || new_price === '') {
-        //         return;
-        //     }
-            
-        //     tmp._id = Store.modal.teachPriceHelper.content[$index].id;
-        //     tmp.price = parseInt(new_price*100);
-        //     var tmp = {
-        //         token: Store.token,
-        //     };
-
-        //     $.ajax({
-        //         url: Store.rootUrl+'/CoursePrice',
-        //         dataType: 'json',
-        //         data:JSON.stringify(tmp),
-        //         type:'POST',
-        //         contentType: "application/json; charset=utf-8"
-        //     }).done(function(data, status, jqXHR){
-        //         if(data.result=='success'){
-        //             alert('执行成功！');
-        //         }else{
-        //             alert('执行失败！');
-        //         }
-        //     }).fail(function(data, status, jqXHR){
-        //        alert('服务器请求超时！');
-        //     });
-        // },
-    },
     template:'<div class=\"modal fade\" id=\"app-modal\" tabindex=\"-1\" role=\"dialog\" aria-labelledby=\"myModalLabel\">'+
                  '<div class=\"modal-dialog\" role=\"document\">'+
                     '<div class=\"modal-content\">'+
@@ -337,6 +307,10 @@ var ActionRow = Vue.extend({
                 case '修改':
                 Store.tmpForm = this.preData;
                 router.go('/UpdateVipEvent');
+                break;
+                case '修改授课单价':
+                Store.tmpForm = this.preData;
+                router.go('/UpdateTeachPrice');
                 break;
                 case '查看':
                 Store.modal.datas = [];
@@ -716,7 +690,7 @@ var SectionTeacher = Vue.extend({
         var tmp={};
         tmp.loaded = false;
         tmp.header = Store.userHeader;
-        tmp.actions = ['查看'];
+        tmp.actions = ['查看','修改授课单价'];
         if (this.$route.params['type_id'] == 'pass'){
             tmp.subtitle = '通过审核的家教';
             tmp.actions.push('重新审核');
@@ -1428,12 +1402,10 @@ var SectionVipEventBook = Vue.extend({
         tmp.header = [
                 {name:'UID',from:'_id'},
                 {name:'预约ID',from:'_id'},
-                {name:'用户类型',from:'type',filter:'radio/user_type'},
-                {name:'支付类型',from:'COMPUTED/PAYTYPE'},
-                {name:'支付时间',from:''}
-
+                {name:'用户类型',from:'user.type',filter:'radio/user_type'},
+                {name:'支付类型',from:'payType'},
+                {name:'支付时间',from:'updated_at',filter:'date'}
         ];
-
         this.reload();
         return tmp;
     },
@@ -1444,12 +1416,12 @@ var SectionVipEventBook = Vue.extend({
                 url:Store.rootUrl+'/VipEvent/Book?token='+Store.token,
                 dataType: 'json',
             }).done(function(data, status, jqXHR){
-                console.log(data.data);
                 if(data.result=="success"){
-                    Store.tmpPreDatas = data.data;
+                    var list = data.data.list;
+                    Store.tmpPreDatas = list;
                     self.postDatas = [];
-                    for(var i in data.data){
-                        var x = data.data[i];
+                    for(var i in list){
+                        var x = list[i];
                         var postData = [];
                         for(var j in self.header) {
                             var str = Store.getter(x,self.header[j].from);
@@ -1664,6 +1636,69 @@ var SectionReport = Vue.extend({
                 '<div><pagination-table v-if="loaded" :post-datas="postDatas" :header="header" :actions="actions"></pagination-table></div>'
 })
 
+var SectionUpdateTeachPrice = Vue.extend({
+    data:function() {
+        var tp = Store.tmpForm.teachPrice;
+        var tmp = {
+            form: [],
+            teacher_name: Store.tmpForm.name,
+            teacher_id: Store.tmpForm._id
+        };
+        for (var i = 0; i != tp.length; i++) {
+            var addPrice = tp[i].addPrice===undefined?0:tp[i].addPrice;
+            tmp.form.push({
+                price: ((tp[i].price+addPrice)/100).toFixed(2) + '元',
+                name: tp[i].course+' '+tp[i].grade,
+                id: tp[i]._id,
+                vm: '',
+            });
+        }
+        return tmp;
+    },
+    template:'<ol class="breadcrumb"><li>家教姓名：{{teacher_name}}</li><li>家教ID：{{teacher_id}}</li><li>修改课程单价</li></ol>'+
+    "<form onSubmit=\"return false;\">\n"+
+                "<div class=\"form-group\" v-for=\"item in form\">\n"+
+                    "<label>{{item.name + ' ' + item.price}}</label>\n"+
+                    "<input style=\"margin: 0 20px;\" type=\"text\" v-model=\"item.vm\">"+
+                    "<button class=\"btn btn-default\" v-on:click=\"submit(item)\">修改</button>\n"+
+               "</div>\n"+                   
+            "</form>",
+    methods:{
+        reset: function() {
+            
+        },
+        submit: function(item) {
+            var new_price = item.vm;
+            if (new_price === '') {
+                return;
+            }
+
+            submitObj = {};
+            
+            submitObj._id = item.id;
+            submitObj.price = parseInt(new_price*100);
+            submitObj.token=Store.token;
+
+            $.ajax({
+                url: Store.rootUrl+'/CoursePrice',
+                dataType: 'json',
+                data:JSON.stringify(submitObj),
+                type:'POST',
+                contentType: "application/json; charset=utf-8"
+            }).done(function(data, status, jqXHR){
+                if(data.result=='success'){
+                    item.price = new_price.toFixed(2) + '元';
+                    alert('执行成功！');
+                }else{
+                    alert('执行失败！');
+                }
+            }).fail(function(data, status, jqXHR){
+               alert('服务器请求超时！');
+            });
+        }
+    }
+})
+
 //路由
 var router = new VueRouter()
 router.map({
@@ -1693,6 +1728,9 @@ router.map({
             },
             '/teacher/:type_id': {
                 component: SectionTeacher,
+            },
+            '/UpdateTeachPrice': {
+                component: SectionUpdateTeachPrice,
             },
             '/guidemap': { 
                 component: SectionGuideMap,
@@ -1744,8 +1782,12 @@ var Store = {
                 var addPrice = data.addPrice===undefined?0:data.addPrice;
                 var professionalTutorPrice = data.professionalTutorPrice===undefined?0:data.professionalTutorPrice;
                 var subsidy = data.subsidy===undefined?0:data.subsidy;
-                var coupon_money = data.coupon.money===undefined?0:data.coupon.money;
-
+                var coupon_money = 0;
+                if (data.coupon !== undefined) {
+                    if (data.coupon.money !== undefined) {
+                        coupon_money = data.coupon.money;
+                    }
+                }
                 return (price + addPrice + professionalTutorPrice) * (time/60) + subsidy - coupon_money;
             case 'COMPUTED/SCORE':
                 if (data.teacherMessage !== undefined) {
