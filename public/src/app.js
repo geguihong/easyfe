@@ -1403,7 +1403,7 @@ var SectionVipEventBook = Vue.extend({
                 {name:'UID',from:'_id'},
                 {name:'预约ID',from:'_id'},
                 {name:'用户类型',from:'user.type',filter:'radio/user_type'},
-                {name:'支付类型',from:'payType'},
+                {name:'支付类型',from:'payType',filter:'radio/pay_type'},
                 {name:'支付时间',from:'updated_at',filter:'date'}
         ];
         this.reload();
@@ -1669,7 +1669,11 @@ var SectionUpdateTeachPrice = Vue.extend({
         },
         submit: function(item) {
             var new_price = item.vm;
-            if (new_price === '') {
+            if (new_price === '' || isNaN(new_price)) {
+                return;
+            }
+
+            if (!confirm('确定要修改单价?')) {
                 return;
             }
 
@@ -1687,7 +1691,8 @@ var SectionUpdateTeachPrice = Vue.extend({
                 contentType: "application/json; charset=utf-8"
             }).done(function(data, status, jqXHR){
                 if(data.result=='success'){
-                    item.price = new_price.toFixed(2) + '元';
+                    console.log(new_price);
+                    item.price = parseFloat(new_price).toFixed(2) + '元';
                     alert('执行成功！');
                 }else{
                     alert('执行失败！');
@@ -1907,6 +1912,8 @@ var Store = {
             return str?'是':'否';
             case 'bool/discount':
             return str === 1?'是':'否';
+            case 'radio/pay_type':
+            return ['余额支付','支付宝支付','微信支付','积分支付'][str];
             case 'radio/checkType':
             return ['未审核','通过','不通过'][str];
             case 'radio/order_type':
