@@ -26,6 +26,53 @@ var safeLock = Vue.extend({
 });
 Vue.component('safe-lock', safeLock);
 
+//Bookmark:orderStatic
+var orderStatic = Vue.extend({
+    data: function() {
+        return {
+            teacher_id: '',
+            parent_id: '',
+            result: {
+                count: '',
+                totalTime: '',
+            },
+        }
+    },
+    methods: {
+        query: function() {
+            var self = this;
+            $.ajax({
+                url:Store.rootUrl+'/TeachRecord?teacherId='+this.teacher_id+'&parentId='+this.parent_id+'&token='+Store.token,
+                dataType: 'json'
+            }).done(function(data, status, jqXHR){
+                if(data.result=="success"){
+                    self.result.count = data.data.count;
+                    self.result.totalTime = data.data.totalTime + ' 分钟';
+                }else{
+                    alert('获取数据失败');
+                }
+            }).fail(function(data, status, jqXHR){
+                alert('服务器请求超时');
+            });
+        }
+    },
+    template: "<form onSubmit=\"return false;\">\n"+
+    "<div>"+
+    "<label style=\"margin-right:20px;\">家教ID</label>"+
+    "<input v-model=\"teacher_id\" type=\"text\" />"+
+    "<label style=\"margin-left:20px;margin-right:20px;\">家长ID</label>"+
+    "<input v-model=\"parent_id\" type=\"text\" />"+
+    "<button style=\"margin-left:20px;\" class=\"btn btn-default\" v-on:click=\"query\">提交查询</button>\n"+
+    "</div>"+
+    "</form>\n"+
+    "<p><strong>查询结果</strong></p>"+
+    "<p>订单数：{{result.count}}</p>"+
+    "<p>订单总时长：{{result.totalTime}}</p>"+
+    "<div style=\"height:50px;border-top:2px dotted black;\" ></div>"
+})
+
+Vue.component('order-static', orderStatic);
+
 //Bookmark:侧边导航
 var SideBar = Vue.extend({
     data: function() {
@@ -70,9 +117,6 @@ var SideBar = Vue.extend({
                 },{
                     name:'已取消订单',
                     href:'/order/n5',
-                },{
-                    name:'订单数查询',
-                    href:'/orderStatic'
                 }]
             },{
                 name: '特价推广管理',
@@ -619,7 +663,7 @@ var SectionAllUser = Vue.extend({
     data: function() { 
         var tmp={};
         tmp.loaded = false;
-        tmp.header = Store.userHeader;
+        tmp.header = Store.userHeader[0].concat(Store.userHeader[1]).concat(Store.userHeader[2]);
         tmp.actions = ['查看'];
         
         this.reload();
@@ -670,7 +714,7 @@ var SectionParent = Vue.extend({
     data: function() { 
         var tmp={};
         tmp.loaded = false;
-        tmp.header = Store.userHeader;
+        tmp.header = Store.userHeader[0].concat(Store.userHeader[1]);
         tmp.actions = ['查看'];
         
         this.reload();
@@ -724,7 +768,7 @@ var SectionTeacher = Vue.extend({
     data: function() { 
         var tmp={};
         tmp.loaded = false;
-        tmp.header = Store.userHeader;
+        tmp.header = Store.userHeader[0].concat(Store.userHeader[2]);
         tmp.actions = ['查看','修改授课单价'];
         if (this.$route.params['type_id'] == 'pass'){
             tmp.subtitle = '通过审核的家教';
@@ -852,7 +896,7 @@ var SectionOrder = Vue.extend({
             {name:'订单状态',from:'state',filter:'radio/order_state'},
             {name:'保险单号',from:'insurance.insuranceNumber'},
             {name:'下单时间',from:'created_at',filter:'date'},
-            {name:'最近修改时间',from:'updatedAt',filter:'date'},
+            {name:'最近修改时间',from:'updated_at',filter:'date'},
             {name:'确认时间',from:'sureTime',filter:'date'},
             {name:'取消者',from:'cancelPerson',filter:'radio/cancelPerson'},
             {name:'是否特价订单',from:'type',filter:'bool/discount'},
@@ -972,52 +1016,8 @@ var SectionOrder = Vue.extend({
         }
     },
     template: '<ol class="breadcrumb"><li>{{maintitle}}</li><li>{{subtitle}}</li></ol>'+
+                '<order-static></order-static>'+
                 '<div><pagination-table v-if="loaded" :post-datas="postDatas" :header="header" :actions="actions"></pagination-table></div>'
-})
-
-//route:orderStatic
-var SectionOrderStatic = Vue.extend({
-    data: function() {
-        return {
-            teacher_id: '',
-            parent_id: '',
-            result: {
-                count: '',
-                totalTime: '',
-            },
-        }
-    },
-    methods: {
-        query: function() {
-            var self = this;
-            $.ajax({
-                url:Store.rootUrl+'/TeachRecord?teacherId='+this.teacher_id+'&parentId='+this.parent_id+'&token='+Store.token,
-                dataType: 'json'
-            }).done(function(data, status, jqXHR){
-                if(data.result=="success"){
-                    self.result.count = data.data.count;
-                    self.result.totalTime = data.data.totalTime + ' 分钟';
-                }else{
-                    alert('获取数据失败');
-                }
-            }).fail(function(data, status, jqXHR){
-                alert('服务器请求超时');
-            });
-        }
-    },
-    template: '<ol class="breadcrumb"><li>订单管理</li><li>订单数查询</li></ol>'+
-    "<form onSubmit=\"return false;\">\n"+
-    "<div class=\"form-group\">\n"+
-    "<label>家教ID</label>"+
-    "<input class=\"form-control\" v-model=\"teacher_id\" type=\"text\" /></div>"+
-    "<div class=\"form-group\">\n"+
-    "<label>家长ID</label>"+
-    "<input class=\"form-control\" v-model=\"parent_id\" type=\"text\" /></div>"+
-    "<button class=\"btn btn-default\" v-on:click=\"query\">提交查询</button>\n"+
-    "</form>\n"+
-    "<p><strong>查询结果</strong></p>"+
-    "<p>订单数：{{result.count}}</p>"+
-    "<p>订单总时长：{{result.totalTime}}</p>"
 })
 
 //route:onlineParams
@@ -1792,7 +1792,6 @@ var SectionUpdateTeachPrice = Vue.extend({
                 contentType: "application/json; charset=utf-8"
             }).done(function(data, status, jqXHR){
                 if(data.result=='success'){
-                    console.log(new_price);
                     item.price = parseFloat(new_price).toFixed(2) + '元';
                     alert('执行成功！');
                 }else{
@@ -1865,9 +1864,6 @@ router.map({
             '/withdraw/:type_id': {
                 component: SectionWithdraw,
             },
-            '/orderStatic': {
-                component: SectionOrderStatic,
-            }
         }
     },
 })
@@ -1979,7 +1975,6 @@ var Store = {
                 return (str/100).toFixed(2) + ' 元';
             }
             case 'knowledge/0':
-            console.log(str);
             if (str) {return str[0];} else {return '';}
             case 'knowledge/1':
             if (str) {return str[1];} else {return '';}
@@ -2087,6 +2082,9 @@ var Store = {
             case 'date':
             var date = new Date(str);
             return date.getFullYear()+'/'+(date.getMonth()+1)+'/'+date.getDate()+' '+date.getHours()+':'+date.getMinutes()+':'+date.getSeconds();
+            case 'onlydate':
+            var date = new Date(str);
+            return date.getFullYear()+'/'+(date.getMonth()+1)+'/'+date.getDate();
             default :
             return str;
         }
@@ -2132,12 +2130,12 @@ var Store = {
         link.click();
         document.body.removeChild(link);
     },
-    userHeader:[
+    userHeader:[[
             {name:'UID',from:'_id'},
             {name:'ID',from:'_id'},
             {name:'姓名',from:'name'},
             {name:'性别',from:'gender',filter:'radio/gender'},
-            {name:'生日',from:'birthday',filter:'date'},
+            {name:'生日',from:'birthday',filter:'onlydate'},
             {name:'手机',from:'phone'},
             {name:'身份证号',from:'teacherMessage.idCard'},
             {name:'家庭地址',from:'position.address'},
@@ -2145,11 +2143,13 @@ var Store = {
             {name:'用户积分',from:'COMPUTED/SCORE'},
             {name:'已完成订单数量',from:'COMPUTED/ORDERCOUNT'},
             {name:'已完成订单时间',from:'COMPUTED/ORDERTIME',filter:'min'},
+            {name:'不良记录',from:'badRecord'},
+    ],[
             {name:'宝贝性别',from:'parentMessage.childGender',filter:'age'},
             {name:'宝贝年龄',from:'parentMessage.childAge',filter:'age'},
             {name:'宝贝年级',from:'parentMessage.childGrade'},
+    ],[
             {name:'家教学校',from:'teacherMessage.school'},
-            {name:'不良记录',from:'teacherMessage.badRecord'},
             {name:'最小课程时间',from:'teacherMessage.minCourseTime',filter:'min'},
             {name:'免费交通区间',from:'teacherMessage.freeTrafficTime',filter:'min'},
             {name:'最远交通区间',from:'teacherMessage.maxTrafficTime',filter:'min'},
@@ -2168,7 +2168,7 @@ var Store = {
             {name:'家教可授课情况',from:'teachPrice',filter:'teachPrice'},
             {name:'家教可授课时间',from:'teacherMessage.multiBookTime',filter:'teachTime'},
             {name:'单次预约时间及备注',from:'teacherMessage.singleBookTime',filter:'singleBookTime'},
-        ],
+    ]],
 };
 
 router.beforeEach(function (transition) {
