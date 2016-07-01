@@ -1563,14 +1563,18 @@ var SectionPaylist = Vue.extend({
             tmp.subtitle = '家教流水';
             tmp.header = [
                 {name:'UID',from:'_id'},
+                {name:'流水类型',from:'buy',filter:'radio/paylist_type'},
+                {name:'付款人类型',from:'user.type',filter:'radio/user_type'},
+                {name:'付款人ID',from:'user._id'},
+                {name:'付款人姓名',from:'user.name'},
+                {name:'付款金额',from:'money',filter:'money'},
+                {name:'付款时间',from:'updated_at',filter:'date'},
+                {name:'订单号',from:'order._id'},
                 {name:'家长ID',from:'order.parent._id'},
                 {name:'家长姓名',from:'order.parent.name'},
-                {name:'订单号',from:'order._id'},
                 {name:'家教ID',from:'order.teacher._id'},
                 {name:'家教姓名',from:'order.teacher.name'},
                 {name:'订单完成时间（学生完成反馈）',from:'order.reportTime',filter:'date'},
-                {name:'总价',from:'money',filter:'money'},
-                {name:'付款时间',from:'updated_at',filter:'date'},
                 {name:'单位价格',from:'order.price',filter:'money'},
                 {name:'交通补贴',from:'order.subsidy',filter:'money'},
                 {name:'专业辅导费',from:'order.professionalTutorPrice',filter:'professionalTutorPrice'},
@@ -1912,7 +1916,7 @@ var Store = {
                 }
             case 'COMPUTED/ORDERCOUNT':
                 if (data.teacherMessage !== undefined) {
-                    return '';
+                    return data.finishOrderCount;
                 } else {
                     return data.parentMessage.bookCount;
                 }
@@ -2047,6 +2051,8 @@ var Store = {
             return str?'否':'是';
             case 'bool/discount':
             return str === 1?'是':'否';
+            case 'radio/paylist_type':
+            return ['订单','会员活动','充值'][str];
             case 'radio/pay_type':
             return ['余额支付','支付宝支付','微信支付','积分支付'][str];
             case 'radio/checkType':
