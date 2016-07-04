@@ -115,7 +115,7 @@ var SideBar = Vue.extend({
                     name:'已完成订单',
                     href:'/order/n4',
                 },{
-                    name:'已取消订单',
+                    name:'已失效订单',
                     href:'/order/n5',
                 }]
             },{
@@ -949,7 +949,7 @@ var SectionOrder = Vue.extend({
             
             case 'n5':
             url = '/Order?state=4';
-            tmp.subtitle = '已取消订单';
+            tmp.subtitle = '已失效订单';
             break;
             
             case 'd0':
@@ -1979,23 +1979,23 @@ var Store = {
                 return (str/100).toFixed(2) + ' 元';
             }
             case 'knowledge/0':
-            if (str) {return str[0];} else {return '';}
+            if (str&&str[0]) {return str[0];} else {return '';}
             case 'knowledge/1':
-            if (str) {return str[1];} else {return '';}
+            if (str&&str[1]) {return str[1];} else {return '';}
             case 'knowledge/2':
-            if (str) {return str[2];} else {return '';}
+            if (str&&str[2]) {return str[2];} else {return '';}
             case 'knowledge/3':
-            if (str) {return str[3];} else {return '';}
+            if (str&&str[3]) {return str[3];} else {return '';}
             case 'knowledge/4':
-            if (str) {return str[4];} else {return '';}
+            if (str&&str[4]) {return str[4];} else {return '';}
             case 'knowledge/5':
-            if (str) {return str[5];} else {return '';}
+            if (str&&str[5]) {return str[5];} else {return '';}
             case 'knowledge/6':
-            if (str) {return str[6];} else {return '';}
+            if (str&&str[6]) {return str[6];} else {return '';}
             case 'knowledge/7':
-            if (str) {return str[7];} else {return '';}
+            if (str&&str[7]) {return str[7];} else {return '';}
             case 'knowledge/8':
-            if (str) {return str[8];} else {return '';}
+            if (str&&str[8]) {return str[8];} else {return '';}
             case 'singleBookTime':
             var new_str = [];
             for (var i = 0;i != str.length;i++) {
