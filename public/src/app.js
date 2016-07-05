@@ -198,7 +198,7 @@ var SideBar = Vue.extend({
                     name: '家长未处理提现',
                     href: '/withdraw/2',
                 },{
-                    name: '家教已处理提现',
+                    name: '家长已处理提现',
                     href: '/withdraw/3',
                 }]
             },{
@@ -1273,7 +1273,7 @@ var SectionWithdraw = Vue.extend({
             {name:'最后操作时间',from:'updated_at',filter:'date'},
         ];
         tmp.actions = ['查看'];
-        tmp.subtitle = ['家教未处理提现','家教已处理提现','家长未处理提现','家教已处理提现'][this.$route.params['type_id']];
+        tmp.subtitle = ['家教未处理提现','家教已处理提现','家长未处理提现','家长已处理提现'][this.$route.params['type_id']];
 
         switch(this.$route.params['type_id']) {
             case '0':
