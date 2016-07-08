@@ -292,12 +292,103 @@ var Modal = Vue.extend({
                                 '<img class=\"right\" v-if=\"item.type===\'img\'\" :src=\"item.content\" />'+
                                 '<div class=\"right\" v-if=\"item.type===\'teachPrice\'||item.type===\'singleBookTime\'||item.type===\'teachTime\'\"><p v-for=\"second_item in item.content\">{{second_item}}</p></div>'+
                             '</div>'+
+                            '<update-teach-price v-if=\"view ===\'updateTeachPrice\'\" :obj="obj"></update-teach-price>'+
+                            '<update-vip-event v-if=\"view ===\'updateVipEvent\'\" :obj="obj"></update-vip-event>'+
                          '</div>'+
                     '</div>'+
                 '</div>'+
             '</div>',
 });
 Vue.component('modal', Modal);
+
+var UpdateTeachPrice = Vue.extend({
+    props: ['obj'],
+    data:function() {
+        var tp = this.obj.teachPrice;
+        var tmp = {
+            form: [],
+            teacher_name: this.obj.name,
+            teacher_id: this.obj._id
+        };
+        for (var i = 0; i != tp.length; i++) {
+            var addPrice = tp[i].addPrice===undefined?0:tp[i].addPrice;
+            tmp.form.push({
+                price: ((tp[i].price+addPrice)/100).toFixed(2) + '元',
+                name: tp[i].course+' '+tp[i].grade,
+                id: tp[i]._id,
+                vm: '',
+            });
+        }
+        return tmp;
+    },
+    template:'<ol class="breadcrumb"><li>家教姓名：{{teacher_name}}</li><li>家教ID：{{teacher_id}}</li></ol>'+
+    "<form onSubmit=\"return false;\">\n"+
+                "<div class=\"form-group\" v-for=\"item in form\">\n"+
+                    "<label>{{item.name + ' ' + item.price}}</label>\n"+
+                    "<input style=\"margin: 0 20px;\" type=\"text\" v-model=\"item.vm\">"+
+                    "<button class=\"btn btn-default\" v-on:click=\"submit(item)\">修改</button>\n"+
+               "</div>\n"+                   
+            "</form>",
+    methods:{
+        reset: function() {
+            
+        },
+        submit: function(item) {
+            var new_price = item.vm;
+            if (new_price === '' || isNaN(new_price)) {
+                return;
+            }
+
+            if (!confirm('确定要修改单价?')) {
+                return;
+            }
+
+            submitObj = {};
+            
+            submitObj._id = item.id;
+            submitObj.price = parseInt(new_price*100);
+            submitObj.token=Store.token;
+
+            $.ajax({
+                url: Store.rootUrl+'/CoursePrice',
+                dataType: 'json',
+                data:JSON.stringify(submitObj),
+                type:'POST',
+                contentType: "application/json; charset=utf-8"
+            }).done(function(data, status, jqXHR){
+                if(data.result=='success'){
+                    item.price = parseFloat(new_price).toFixed(2) + '元';
+                    alert('执行成功！');
+                }else{
+                    alert('执行失败！');
+                }
+            }).fail(function(data, status, jqXHR){
+               alert('服务器请求超时！');
+            });
+        }
+    }
+})
+Vue.component('update-teach-price',UpdateTeachPrice);
+
+var UpdateVipEvent = Vue.extend({
+    props: ['obj'],
+    data: function() {
+        return {
+            form: [
+                {name:'活动ID',from:'vipEventId',default:this.obj._id,filter:'uid'},
+                {name:'活动标题',from:'title',default:this.obj.title},
+                {name:'活动说明',from:'detail',default:this.obj.detail},
+                {name:'积分预订',from:'score',default:this.obj.score.toString()},
+                {name:'现金预订',from:'money',default:(this.obj.money/100).toFixed(2),submitFilter:'number/100'},
+                {name:'最大人数',from:'allowCount',default:this.obj.allowCount.toString()},
+                {name:'是否接受预订',from:'isPublish',default:this.obj.isPublish,filter:'bool'},
+                ]
+        }
+    },
+    template: '<ol class="breadcrumb"><li>修改</li><li>修改会员活动</li></ol>'+
+                '<div><dirty-form :form="form" api="/VipEvent/Update" :is-tmp="true"></dirty-form></div>',
+})
+Vue.component('update-vip-event',UpdateVipEvent);
 
 //Bookmark:动作行
 var ActionRow = Vue.extend({
@@ -431,8 +522,10 @@ var ActionRow = Vue.extend({
                 this.checkWithdraw(this.preData._id,0);
                 break;
                 case '修改活动':
+                Store.showModal('updateVipEvent',this.preData);
                 break;
                 case '修改授课单价':
+                Store.showModal('updateTeachPrice',this.preData);
                 break;
                 case '查看':
                 detailList = [];
@@ -591,7 +684,7 @@ var SectionTeacher = Vue.extend({
     },
     methods: {
         reload: function(type) {
-            Store.commonGet('/User?type='+type,this,false,['_id']);
+            Store.commonGet('/User?type='+type,this,false,['_id','name','teachPrice']);
         }
     },
     template: '<ol class="breadcrumb"><li>用户管理</li><li>{{subtitle}}</li></ol>'+
@@ -831,7 +924,15 @@ var SectionVipEvent = Vue.extend({
     },
     methods: {
         reload: function(type) {
-            Store.commonGet('/VipEvent?',this);
+            Store.commonGet('/VipEvent?',this,false,[
+                '_id',
+                'title',
+                'detail',
+                'score',
+                'money',
+                'allowCount',
+                'isPublish'
+            ]);
         }
     },
     template: '<ol class="breadcrumb"><li>会员活动</li><li>会员活动发布情况</li></ol>'+
@@ -867,25 +968,6 @@ var SectionVipEventBook = Vue.extend({
     template: '<ol class="breadcrumb"><li>会员活动</li><li>会员活动预订情况</li></ol>'+
                 '<div><pagination-table v-if="loaded" :post-datas="postDatas" :header="header" :actions="actions"></pagination-table></div>'
 })
-
-// //route:UpdateVipEvent
-// var SectionUpdateVipEvent = Vue.extend({
-//     data: function() {
-//         return {
-//             form: [
-//                 {name:'活动ID',from:'vipEventId',default:Store.tmpForm._id,filter:'uid'},
-//                 {name:'活动标题',from:'title',default:Store.tmpForm.title},
-//                 {name:'活动说明',from:'detail',default:Store.tmpForm.detail},
-//                 {name:'积分预订',from:'score',default:Store.tmpForm.score.toString()},
-//                 {name:'现金预订',from:'money',default:(Store.tmpForm.money/100).toFixed(2),filter:'number/100'},
-//                 {name:'最大人数',from:'allowCount',default:Store.tmpForm.allowCount.toString()},
-//                 {name:'是否接受预订',from:'isPublish',default:Store.tmpForm.isPublish,filter:'bool'},
-//                 ]
-//         }
-//     },
-//     template: '<ol class="breadcrumb"><li>修改</li><li>修改会员活动</li></ol>'+
-//                 '<div><dirty-form :form="form" api="/VipEvent/Update" :is-tmp="true"></dirty-form></div>',
-// })
 
 //route:Paylist
 var SectionPaylist = Vue.extend({
@@ -1016,73 +1098,6 @@ var SectionReport = Vue.extend({
                 '<div><pagination-table v-if="loaded" :post-datas="postDatas" :header="header" :actions="actions"></pagination-table></div>'
 })
 
-// var SectionUpdateTeachPrice = Vue.extend({
-//     data:function() {
-//         var tp = Store.tmpForm.teachPrice;
-//         var tmp = {
-//             form: [],
-//             teacher_name: Store.tmpForm.name,
-//             teacher_id: Store.tmpForm._id
-//         };
-//         for (var i = 0; i != tp.length; i++) {
-//             var addPrice = tp[i].addPrice===undefined?0:tp[i].addPrice;
-//             tmp.form.push({
-//                 price: ((tp[i].price+addPrice)/100).toFixed(2) + '元',
-//                 name: tp[i].course+' '+tp[i].grade,
-//                 id: tp[i]._id,
-//                 vm: '',
-//             });
-//         }
-//         return tmp;
-//     },
-//     template:'<ol class="breadcrumb"><li>家教姓名：{{teacher_name}}</li><li>家教ID：{{teacher_id}}</li><li>修改课程单价</li></ol>'+
-//     "<form onSubmit=\"return false;\">\n"+
-//                 "<div class=\"form-group\" v-for=\"item in form\">\n"+
-//                     "<label>{{item.name + ' ' + item.price}}</label>\n"+
-//                     "<input style=\"margin: 0 20px;\" type=\"text\" v-model=\"item.vm\">"+
-//                     "<button class=\"btn btn-default\" v-on:click=\"submit(item)\">修改</button>\n"+
-//                "</div>\n"+                   
-//             "</form>",
-//     methods:{
-//         reset: function() {
-            
-//         },
-//         submit: function(item) {
-//             var new_price = item.vm;
-//             if (new_price === '' || isNaN(new_price)) {
-//                 return;
-//             }
-
-//             if (!confirm('确定要修改单价?')) {
-//                 return;
-//             }
-
-//             submitObj = {};
-            
-//             submitObj._id = item.id;
-//             submitObj.price = parseInt(new_price*100);
-//             submitObj.token=Store.token;
-
-//             $.ajax({
-//                 url: Store.rootUrl+'/CoursePrice',
-//                 dataType: 'json',
-//                 data:JSON.stringify(submitObj),
-//                 type:'POST',
-//                 contentType: "application/json; charset=utf-8"
-//             }).done(function(data, status, jqXHR){
-//                 if(data.result=='success'){
-//                     item.price = parseFloat(new_price).toFixed(2) + '元';
-//                     alert('执行成功！');
-//                 }else{
-//                     alert('执行失败！');
-//                 }
-//             }).fail(function(data, status, jqXHR){
-//                alert('服务器请求超时！');
-//             });
-//         }
-//     }
-// })
-
 //route:sendMessage
 var SectionSendMessage = Vue.extend({
     data: function() {
@@ -1136,6 +1151,12 @@ var DirtyForm = Vue.extend({
     template:"<form onSubmit=\"return false;\">\n"+
                 "<div class=\"form-group\" v-for=\"item in form\">\n"+
                     "<label>{{item.name}}</label><span :class=\"{hidden:(models[$index]===item.default)}\">*</span>\n"+
+                    "<template v-if=\"item.filter==='uid'\">\n"+
+                        "<p>{{models[$index]}}</p>\n"+
+                    "</template>\n"+
+                    "<template v-if=\"item.filter==='bool'\">\n"+
+                        "<br><label class=\"radio-inline\"><input v-model=\"models[$index]\" type=\"radio\" :value=\"true\" />是</label><label class=\"radio-inline\"><input v-model=\"models[$index]\" type=\"radio\" :value=\"false\" />否</label>"+
+                    "</template>\n"+
                     "<template v-if=\"item.filter==='textarea'\">\n"+
                         "<textarea class=\"form-control\" rows=\"3\" v-model=\"models[$index]\"></textarea>\n"+
                     "</template>\n"+
@@ -1143,7 +1164,7 @@ var DirtyForm = Vue.extend({
                         "<br><img :src=\"models[$index]\" alt=\"暂无图片\">\n"+
                         "<input type=\"file\" v-on:change=\"upload($event,$index)\"/>\n"+
                     "</template>\n"+
-                    "<template v-if=\"(item.filter!=='img'&&item.filter!=='textarea')\">\n"+
+                    "<template v-if=\"item.filter===undefined\">\n"+
                         "<br><input class=\"form-control\" type=\"text\" v-model=\"models[$index]\"/>\n"+
                     "</template>\n"+
                "</div>\n"+                   
@@ -1194,7 +1215,7 @@ var DirtyForm = Vue.extend({
 
                 if(this.form[i].default !== this.models[i]) {
                     var post;
-                    switch(this.form[i].filter) {
+                    switch(this.form[i].submitFilter) {
                         case 'number/100':
                         post = parseInt(this.models[i]*100);
                         break;
