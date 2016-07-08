@@ -266,44 +266,38 @@ var PageLogin = Vue.extend({
     template: "<div class=\"container\">\n                    <form class=\"form-signin\" onsubmit=\"return false;\">\n                        <h2 class=\"form-signin-heading\">请登录</h2>\n                        <label class=\"sr-only\" for=\"inputEmail\">管理员账号</label>\n                        <input v-model=\"account\" class=\"form-control\" id=\"inputEmail\" autofocus=\"\" required=\"\" type=\"text\" placeholder=\"请输入账号...\">\n                        <label class=\"sr-only\" for=\"inputPassword\">密码</label>\n                        <input v-model=\"password\" class=\"form-control\" id=\"inputPassword\" required=\"\" type=\"password\" placeholder=\"请输入密码...\">\n                        <button class=\"btn btn-lg btn-primary btn-block\" type=\"submit\" v-on:click=\"submit()\" :disabled=\"submitLock\">登陆</button>\n                    </form>\n                </div>",
 })
 
-// //BookMark:模态框
-// var Modal = Vue.extend({
-//     data: function() {
-//         return {
-//             curRoute: 'modal-close',
-//         };
-//     },
-//     template:'<component :is="curRoute"></component>',
-// });
-// Vue.component('modal', Modal);
-// var ModalClose = Vue.extend({
-//     template: '',
-// });
-// var ModalView = Vue.extend({
-//     data: function() {
-//         return {
-//             list: [],
-//         };
-//     },
-//     template:'<div class=\"modal fade\">'+
-//                  '<div class=\"modal-dialog\">'+
-//                     '<div class=\"modal-content\">'+
-//                         '<div class=\"modal-header\">'+                           
-//                             '<button type=\"button\" class=\"close\"><span aria-hidden=\"true\">&times;</span></button>'+
-//                             '<h4 class=\"modal-title\">详情</h4>'+                       
-//                         '</div>'+
-//                         '<div class=\"modal-body\">'+
-//                             '<div v-if=\"$index > 0\" v-for=\"item in list\" class=\"bundle\" track-by=\"$index\">'+   
-//                                 '<p class=\"left\"><strong>{{item.name}}</strong></p>'+    
-//                                 '<p class=\"right\" v-if=\"item.type===\'text\'\" >{{item.content}}</p>'+
-//                                 '<img class=\"right\" v-if=\"item.type===\'img\'\" :src=\"item.content\" />'+
-//                                 '<div class=\"right\" v-if=\"item.type===\'teachPrice\'||item.type===\'singleBookTime\'||item.type===\'teachTime\'\"><p v-for=\"second_item in item.content\">{{second_item}}</p></div>'+
-//                             '</div>'+
-//                          '</div>'+
-//                     '</div>'+
-//                 '</div>'+
-//             '</div>',
-// });
+//BookMark:模态框
+var Modal = Vue.extend({
+    data: function() {
+        return Store.modal;
+    },
+    methods: {
+        exit: function() {
+            this.close = true;
+            this.view = '';
+            this.obj = null;
+        }
+    },
+    template:'<div class="window" v-if=\"!close\">'+
+                 '<div class=\"modal-dialog\">'+
+                    '<div class=\"modal-content\">'+
+                        '<div class=\"modal-header\">'+                      
+                            '<button type=\"button\" class="close" v-on:click=\"exit()\"><span aria-hidden=\"true\">&times;</span></button>'+ 
+                            '<h4>详情</h4>'+
+                        '</div>'+
+                        '<div class=\"modal-body\">'+
+                            '<div v-if=\"view ===\'detail\'\" v-for=\"item in obj\" class=\"bundle\" track-by=\"$index\">'+   
+                                '<p class=\"left\"><strong>{{item.name}}</strong></p>'+    
+                                '<p class=\"right\" v-if=\"item.type===\'text\'\" >{{item.content}}</p>'+
+                                '<img class=\"right\" v-if=\"item.type===\'img\'\" :src=\"item.content\" />'+
+                                '<div class=\"right\" v-if=\"item.type===\'teachPrice\'||item.type===\'singleBookTime\'||item.type===\'teachTime\'\"><p v-for=\"second_item in item.content\">{{second_item}}</p></div>'+
+                            '</div>'+
+                         '</div>'+
+                    '</div>'+
+                '</div>'+
+            '</div>',
+});
+Vue.component('modal', Modal);
 
 //Bookmark:动作行
 var ActionRow = Vue.extend({
@@ -441,34 +435,35 @@ var ActionRow = Vue.extend({
                 case '修改授课单价':
                 break;
                 case '查看':
-                // Store.modal.datas = [];
-                // for (var i = 0;i != Store.modal.header.length;i++) {
-                //     var type = '';
-                //     if (Store.modal.header[i].filter !== 'img' && Store.modal.header[i].filter !== 'teachPrice' && Store.modal.header[i].filter !== 'teachTime' && Store.modal.header[i].filter !== 'singleBookTime') {
-                //         type = 'text';
-                //     } else {
-                //         type = Store.modal.header[i].filter;
-                //     }
+                detailList = [];
+                for (var i = 0;i != Store.tmpHeader.length;i++) {
+                    var type = '';
+                    if (Store.tmpHeader[i].filter !== 'img' && Store.tmpHeader[i].filter !== 'teachPrice' && Store.tmpHeader[i].filter !== 'teachTime' && Store.tmpHeader[i].filter !== 'singleBookTime') {
+                        type = 'text';
+                    } else {
+                        type = Store.tmpHeader[i].filter;
+                    }
 
-                //     var content;
-                //     if (type === 'teachPrice' || type === 'teachTime' || type === 'singleBookTime') {
-                //         var arr = this.postData[i].split(';');
-                //         var new_arr = [];
-                //         for (var j=0;j!==arr.length;j++) {
-                //             new_arr.push(arr[j]);
-                //         }
-                //         content = new_arr;
-                //     } else {
-                //         content = this.postData[i];
-                //     }
+                    var content;
+                    if (type === 'teachPrice' || type === 'teachTime' || type === 'singleBookTime') {
+                        var arr = this.postData[i].split(';');
+                        var new_arr = [];
+                        for (var j=0;j!==arr.length;j++) {
+                            new_arr.push(arr[j]);
+                        }
+                        content = new_arr;
+                    } else {
+                        content = this.postData[i];
+                    }
 
-                //     Store.modal.datas.push({
-                //         type:  type,
-                //         content: content,
-                //         name: Store.modal.header[i].name,
-                //     });
-                // }
-                // $('#app-modal').modal();
+                    detailList.push({
+                        type:  type,
+                        content: content,
+                        name: Store.tmpHeader[i].name,
+                    });
+                }
+
+                Store.showModal('detail',detailList);
                 break;
             }
         }
@@ -480,6 +475,8 @@ Vue.component('action-row', ActionRow);
 var PaginationTable = Vue.extend({
     props:['postDatas','header','actions'],
     data:function() {
+        Store.tmpHeader = this.header;
+
         this.datas = [];
         for(var i=0;i!==this.postDatas.length;i++) {
             this.datas.push(this.postDatas[i]);
@@ -533,7 +530,8 @@ Vue.component('pagination-table',PaginationTable);
 
 //route:home 
 var PageHome = Vue.extend({
-    template:"<div class=\"container-fluid\">\n                <div class=\"row\">\n                    <!-- 侧边导航 -->\n                    <div class=\"col-xs-2 sidebar\">\n                        <side-bar></side-bar>\n                    </div>\n\n                    <div class=\"col-xs-10 col-xs-offset-2 main\">\n                        <router-view></router-view>\n                    </div>\n                </div>\n            </div>\n"
+    template:"<div class=\"container-fluid\">\n                <div class=\"row\">\n                    <!-- 侧边导航 -->\n                    <div class=\"col-xs-2 sidebar\">\n                        <side-bar></side-bar>\n                    </div>\n\n                    <div class=\"col-xs-10 col-xs-offset-2 main\">\n                        <router-view></router-view>\n                    </div>\n                </div>\n            </div>\n"+
+    '<modal></modal>'
 })
 
 //route:allUser
@@ -775,7 +773,7 @@ var SectionWithdraw = Vue.extend({
             {name:'支付方式',from:'COMPUTED/PAYWAY'},
             {name:'最后操作时间',from:'updated_at',filter:'date'},
         ];
-        tmp.actions = ['查看'];
+        tmp.actions = [];
         tmp.subtitle = ['家教未处理提现','家教已处理提现','家长未处理提现','家长已处理提现'][this.$route.params['type_id']];
 
         switch(this.$route.params['type_id']) {
@@ -824,7 +822,7 @@ var SectionVipEvent = Vue.extend({
                 {name:'已预约人数',from:'bookCount'},
                 {name:'活动状态',from:'COMPUTED/EVENTSTATE'},
         ];
-        tmp.actions = ['查看','修改'];
+        tmp.actions = ['查看','修改活动'];
         tmp.subtitle = ['所有反馈','需求反馈','应用反馈','投诉反馈'][this.$route.params['type_id']];
 
         
@@ -1554,6 +1552,17 @@ var Store = {
     rootUrl: '/Web',
     token: '',
     safeLockPsw: 'jiajiaoyi',
+    tmpHeader: [],
+    modal: {
+        close: true,
+        view: '',
+        obj: null,
+    },
+    showModal: function(text,obj) {
+        this.modal.close = false;
+        this.modal.view = text;
+        this.modal.obj = obj;
+    },
     getter: function(data,key) {
         switch (key) {
             case 'COMPUTED/EVENTBOOKPAY':
@@ -1836,7 +1845,7 @@ var Store = {
         document.body.removeChild(link);
     },
     userHeader:[[
-            {name:'ID',from:'_id'},
+            {name:'用户ID',from:'_id'},
             {name:'姓名',from:'name'},
             {name:'性别',from:'gender',filter:'radio/gender'},
             {name:'生日',from:'birthday',filter:'onlydate'},
