@@ -876,8 +876,10 @@ var SectionOrder = Vue.extend({
         tmp.header = [
             {name:'UID',from:'_id'},
             {name:'家长ID',from:'parent._id'},
+            {name:'家长姓名',from:'parent.name'},
             {name:'家长手机',from:'parent.phone'},
             {name:'家教ID',from:'teacher._id'},
+            {name:'家教姓名',from:'teacher.name'},
             {name:'家教手机',from:'teacher.phone'},
             {name:'年级',from:'grade'},
             {name:'课程',from:'course'},
@@ -900,6 +902,7 @@ var SectionOrder = Vue.extend({
             {name:'确认时间',from:'sureTime',filter:'date'},
             {name:'取消者',from:'cancelPerson',filter:'radio/cancelPerson'},
             {name:'是否特价订单',from:'type',filter:'bool/discount'},
+            {name:'特价推广原始单价',from: 'originalPrice',filter: 'money'}
         ];
         
         tmp.actions = [];
@@ -1268,6 +1271,7 @@ var SectionWithdraw = Vue.extend({
         tmp.header = [
             {name:'UID',from:'_id'},
             {name:'用户ID',from:'user._id'},
+            {name:'用户姓名',from:'user.name'},
             {name:'正在申请提现金额',from:'withdraw',filter:'money'},
             {name:'支付方式',from:'COMPUTED/PAYWAY'},
             {name:'最后操作时间',from:'updated_at',filter:'date'},
@@ -1482,7 +1486,10 @@ var SectionVipEventBook = Vue.extend({
         tmp.header = [
                 {name:'UID',from:'_id'},
                 {name:'预约ID',from:'_id'},
+                {name:'活动标题',from:'vipEvent.title'},
+                {name:'活动编号',from:'vipEvent._id'},
                 {name:'用户类型',from:'user.type',filter:'radio/user_type'},
+                {name:'用户姓名',from:'user.name'},
                 {name:'支付类型',from:'payType',filter:'radio/pay_type'},
                 {name:'支付时间',from:'updated_at',filter:'date'}
         ];
@@ -1567,7 +1574,30 @@ var SectionPaylist = Vue.extend({
                 {name:'付款人类型',from:'user.type',filter:'radio/user_type'},
                 {name:'付款人ID',from:'user._id'},
                 {name:'付款人姓名',from:'user.name'},
-                {name:'付款金额',from:'money',filter:'money'},
+                {name:'付款金额',from:'COMPUTED/PAYMONEY-TEACHER',filter:'money'},
+                {name:'付款时间',from:'updated_at',filter:'date'},
+                {name:'订单号',from:'order.orderNumber'},
+                {name:'家长ID',from:'order.parent._id'},
+                {name:'家长姓名',from:'order.parent.name'},
+                {name:'家教ID',from:'order.teacher._id'},
+                {name:'家教姓名',from:'order.teacher.name'},
+                {name:'订单完成时间（学生完成反馈）',from:'order.reportTime',filter:'date'},
+                {name:'单位价格',from:'order.price',filter:'money'},
+                {name:'交通补贴',from:'order.subsidy',filter:'money'},
+                {name:'专业辅导费',from:'order.professionalTutorPrice',filter:'professionalTutorPrice'},
+                {name:'抵减优惠券',from:'order.coupon.money',filter:'money'},
+                {name:'会员活动编号',from:'vipEvent'},
+            ];
+            this.reload(2);
+        } else if (this.$route.params['type'] == 'parent') {
+            tmp.subtitle = '家长流水';
+            tmp.header = [
+                {name:'UID',from:'_id'},
+                {name:'流水类型',from:'buy',filter:'radio/paylist_type'},
+                {name:'付款人类型',from:'user.type',filter:'radio/user_type'},
+                {name:'付款人ID',from:'user._id'},
+                {name:'付款人姓名',from:'user.name'},
+                {name:'付款金额',from:'COMPUTED/PAYMONEY-PARENT',filter:'money'},
                 {name:'付款时间',from:'updated_at',filter:'date'},
                 {name:'订单号',from:'order._id'},
                 {name:'家长ID',from:'order.parent._id'},
@@ -1582,23 +1612,6 @@ var SectionPaylist = Vue.extend({
                 {name:'会员活动编号',from:'vipEvent'},
             ];
             this.reload(1);
-        } else if (this.$route.params['type'] == 'parent') {
-            tmp.subtitle = '家长流水';
-            tmp.header = [
-                {name:'UID',from:'_id'},
-                {name:'家长ID',from:'order.parent._id'},
-                {name:'家长姓名',from:'order.parent.name'},
-                {name:'订单号',from:'order._id'},
-                {name:'家教ID',from:'order.teacher._id'},
-                {name:'家教姓名',from:'order.teacher.name'},
-                {name:'订单完成时间（学生完成反馈）',from:'order.reportTime',filter:'date'},
-                {name:'付款时间',from:'updated_at',filter:'date'},
-                {name:'单位价格',from:'order.price',filter:'money'},
-                {name:'交通补贴',from:'order.subsidy',filter:'money'},
-                {name:'总价',from:'money',filter:'money'},
-                {name:'会员活动编号',from:'vipEvent'},
-            ];
-            this.reload(2);
         }
         return tmp;
     },
@@ -1889,7 +1902,7 @@ var Store = {
                 var price = data.price;
                 var time = data.time;
                 var addPrice = data.addPrice===undefined?0:data.addPrice;
-                var professionalTutorPrice = data.professionalTutorPrice===undefined?0:data.professionalTutorPrice;
+                var professionalTutorPrice = data.professionalTutorPrice===undefined||data.professionalTutorPrice===-1?0:data.professionalTutorPrice;
                 var subsidy = data.subsidy===undefined?0:data.subsidy;
                 var coupon_money = 0;
                 if (data.coupon !== undefined) {
@@ -1937,6 +1950,14 @@ var Store = {
                     return '微信账号：'+data.way.wechat;
                 } else {
                     return '银行：'+data.way.bank.name+' 银行卡号：'+data.way.bank.account;
+                }
+            case 'COMPUTED/PAYMONEY-PARENT':
+                return -data.money;
+            case 'COMPUTED/PAYMONEY-TEACHER':
+                if (data.buy === 0) {
+                    return data.money;
+                } else {
+                    return -data.money;
                 }
         }
 
@@ -2062,7 +2083,7 @@ var Store = {
             case 'radio/user_type':
             return ['家长/家教','家教','家长'][str];
             case 'radio/order_state':
-            return ['已预定','待执行','已修改','已完成','已取消'][str];
+            return ['已预定','待执行','已修改','已完成','已失效'][str];
             case 'radio/gender':
             return ['女','男'][str];
             case 'radio/feedback':
@@ -2154,7 +2175,10 @@ var Store = {
             {name:'宝贝年龄',from:'parentMessage.childAge',filter:'age'},
             {name:'宝贝年级',from:'parentMessage.childGrade'},
     ],[
+            {name:'简介',from:'teacherMessage.profile'},
+            {name:'家教专业',from:'teacherMessage.profession'},
             {name:'家教学校',from:'teacherMessage.school'},
+            {name:'家教年级',from:'teacherMessage.grade'},
             {name:'最小课程时间',from:'teacherMessage.minCourseTime',filter:'min'},
             {name:'免费交通区间',from:'teacherMessage.freeTrafficTime',filter:'min'},
             {name:'最远交通区间',from:'teacherMessage.maxTrafficTime',filter:'min'},
