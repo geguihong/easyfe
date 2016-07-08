@@ -103,7 +103,7 @@ var SideBar = Vue.extend({
                     name:'所有订单',
                     href:'/order/n0',
                 },{
-                    name:'已预定订单',
+                    name:'已预订订单',
                     href:'/order/n1',
                 },{
                     name:'待执行订单',
@@ -176,7 +176,7 @@ var SideBar = Vue.extend({
                     name: '会员活动发布情况',
                     href: '/VipEvent',
                 },{
-                    name: '会员活动预定情况',
+                    name: '会员活动预订情况',
                     href: '/VipEventBook',
                 }]
             },{
@@ -932,7 +932,7 @@ var SectionOrder = Vue.extend({
             
             case 'n1':
             url = '/Order?state=0';
-            tmp.subtitle = '已预定订单';
+            tmp.subtitle = '已预订订单';
             break;
             
             case 'n2':
@@ -1207,14 +1207,17 @@ var SectionFeedback = Vue.extend({
         tmp.loaded = false;
         tmp.header = [
                 {name:'UID',from:'_id'},
-                {name:'ID',from:'_id'},
+                {name:'反馈ID',from:'_id'},
+                {name:'用户类型',from:'TODO',filter:'radio/user_type'},
+                {name:'用户ID',from:'TODO'},
+                {name:'用户姓名',from:'TODO'},
+                {name:'用户手机',from:'TODO'},
                 {name:'反馈类型',from:'type',filter:'radio/feedback'},
                 {name:'反馈内容',from:'content'},
                 {name:'提交时间',from:'created_at',filter:'date'},
         ];
         tmp.actions = ['查看'];
         tmp.subtitle = ['所有反馈','需求反馈','应用反馈','投诉反馈'][this.$route.params['type_id']];
-
         
         this.reload(this.$route.params['type_id']);
         return tmp;
@@ -1272,6 +1275,7 @@ var SectionWithdraw = Vue.extend({
             {name:'UID',from:'_id'},
             {name:'用户ID',from:'user._id'},
             {name:'用户姓名',from:'user.name'},
+            {name:'用户手机',from:'user.phone'},
             {name:'正在申请提现金额',from:'withdraw',filter:'money'},
             {name:'支付方式',from:'COMPUTED/PAYWAY'},
             {name:'最后操作时间',from:'updated_at',filter:'date'},
@@ -1365,16 +1369,16 @@ var SectionCreateEvent = Vue.extend({
                                 '<label>活动说明</label><textarea class=\"form-control\" rows=\"3\" v-model=\"detail\"></textarea>'+
                             '</div>'+
                             '<div class=\"form-group\">'+                         
-                                '<label>积分预定</label><input class=\"form-control\" type="text" v-model=\"score\">'+
+                                '<label>积分预订</label><input class=\"form-control\" type="text" v-model=\"score\">'+
                             '</div>'+
                             '<div class=\"form-group\">'+                         
-                                '<label>现金预定</label><input class=\"form-control\" type="text" v-model=\"money\">'+
+                                '<label>现金预订</label><input class=\"form-control\" type="text" v-model=\"money\">'+
                             '</div>'+
                             '<div class=\"form-group\">'+                       
                                 '<label>活动人数上限</label><input class=\"form-control\" type="text" v-model=\"allowCount\">'+
                             '</div>'+
                             '<div class=\"form-group\">'+
-                                '<label>是否接受预定</label><br /><label class=\"radio-inline\"><input v-model=\"isPublish\" type=\"radio\" value=\"1\" />是</label><label class=\"radio-inline\"><input v-model=\"isPublish\" type=\"radio\" value=\"0\" />否</label>'+
+                                '<label>是否接受预订</label><br /><label class=\"radio-inline\"><input v-model=\"isPublish\" type=\"radio\" value=\"1\" />是</label><label class=\"radio-inline\"><input v-model=\"isPublish\" type=\"radio\" value=\"0\" />否</label>'+
                             '</div>'+
                             '<safe-lock text=\"解锁发布按钮\"><button class=\"btn btn-default\" v-on:click=\"submit\" :disabled=\"submitLock\">发布活动</button></safe-lock>'+
                         '</form>'+
@@ -1421,7 +1425,8 @@ var SectionVipEvent = Vue.extend({
         tmp.loaded = false;
         tmp.header = [
                 {name:'UID',from:'_id'},
-                {name:'活动编号',from:'_id'},
+                {name:'活动ID',from:'_id'},
+                {name:'活动编号',from:'TODO'},
                 {name:'活动标题',from:'title'},
                 {name:'发布时间',from:'created_at',filter:'date'},
                 {name:'活动说明',from:'detail'},
@@ -1485,13 +1490,17 @@ var SectionVipEventBook = Vue.extend({
         tmp.loaded = false;
         tmp.header = [
                 {name:'UID',from:'_id'},
-                {name:'预约ID',from:'_id'},
+                {name:'活动ID',from:'vipEvent._id'},
+                {name:'活动编号',from:'TODO'},
                 {name:'活动标题',from:'vipEvent.title'},
-                {name:'活动编号',from:'vipEvent._id'},
+                {name:'预约ID',from:'_id'},
                 {name:'用户类型',from:'user.type',filter:'radio/user_type'},
+                {name:'用户ID',from:'user._id'},
                 {name:'用户姓名',from:'user.name'},
+                {name:'用户手机',from:'user.phone'},
+                {name:'下单时间',from:'updated_at',filter:'date'},
                 {name:'支付类型',from:'payType',filter:'radio/pay_type'},
-                {name:'支付时间',from:'updated_at',filter:'date'}
+                {name:'支付额度',from:'COMPUTED/EVENTBOOKPAY'},
         ];
         this.reload();
         return tmp;
@@ -1533,7 +1542,7 @@ var SectionVipEventBook = Vue.extend({
             });
         }
     },
-    template: '<ol class="breadcrumb"><li>会员活动</li><li>会员活动预定情况</li></ol>'+
+    template: '<ol class="breadcrumb"><li>会员活动</li><li>会员活动预订情况</li></ol>'+
                 '<div><pagination-table v-if="loaded" :post-datas="postDatas" :header="header" :actions="actions"></pagination-table></div>'
 })
 
@@ -1542,13 +1551,13 @@ var SectionUpdateVipEvent = Vue.extend({
     data: function() {
         return {
             form: [
-                {name:'活动编号',from:'vipEventId',default:Store.tmpForm._id,filter:'uid'},
+                {name:'活动ID',from:'vipEventId',default:Store.tmpForm._id,filter:'uid'},
                 {name:'活动标题',from:'title',default:Store.tmpForm.title},
                 {name:'活动说明',from:'detail',default:Store.tmpForm.detail},
                 {name:'积分预订',from:'score',default:Store.tmpForm.score.toString()},
                 {name:'现金预订',from:'money',default:(Store.tmpForm.money/100).toFixed(2),filter:'number/100'},
                 {name:'最大人数',from:'allowCount',default:Store.tmpForm.allowCount.toString()},
-                {name:'是否接受预定',from:'isPublish',default:Store.tmpForm.isPublish,filter:'bool'},
+                {name:'是否接受预订',from:'isPublish',default:Store.tmpForm.isPublish,filter:'bool'},
                 ]
         }
     },
@@ -1566,51 +1575,36 @@ var SectionPaylist = Vue.extend({
         tmp.loaded = false;
         tmp.actions = [];
 
-        if (this.$route.params['type'] == 'teacher') {
-            tmp.subtitle = '家教流水';
-            tmp.header = [
+        tmp.header = [
                 {name:'UID',from:'_id'},
                 {name:'流水类型',from:'buy',filter:'radio/paylist_type'},
                 {name:'付款人类型',from:'user.type',filter:'radio/user_type'},
                 {name:'付款人ID',from:'user._id'},
                 {name:'付款人姓名',from:'user.name'},
+                {name:'付款人手机',from:'user.phone'},
                 {name:'付款金额',from:'COMPUTED/PAYMONEY-TEACHER',filter:'money'},
                 {name:'付款时间',from:'updated_at',filter:'date'},
+                {name:'会员活动编号',from:'vipEvent'},
                 {name:'订单号',from:'order.orderNumber'},
                 {name:'家长ID',from:'order.parent._id'},
                 {name:'家长姓名',from:'order.parent.name'},
+                {name:'家长手机',from:'order.parent.phone'},
                 {name:'家教ID',from:'order.teacher._id'},
                 {name:'家教姓名',from:'order.teacher.name'},
+                {name:'家教手机',from:'order.teacher.phone'},
                 {name:'订单完成时间（学生完成反馈）',from:'order.reportTime',filter:'date'},
                 {name:'单位价格',from:'order.price',filter:'money'},
                 {name:'交通补贴',from:'order.subsidy',filter:'money'},
                 {name:'专业辅导费',from:'order.professionalTutorPrice',filter:'professionalTutorPrice'},
                 {name:'抵减优惠券',from:'order.coupon.money',filter:'money'},
-                {name:'会员活动编号',from:'vipEvent'},
             ];
+
+        if (this.$route.params['type'] == 'teacher') {
+            tmp.subtitle = '家教流水';
             this.reload(2);
         } else if (this.$route.params['type'] == 'parent') {
             tmp.subtitle = '家长流水';
-            tmp.header = [
-                {name:'UID',from:'_id'},
-                {name:'流水类型',from:'buy',filter:'radio/paylist_type'},
-                {name:'付款人类型',from:'user.type',filter:'radio/user_type'},
-                {name:'付款人ID',from:'user._id'},
-                {name:'付款人姓名',from:'user.name'},
-                {name:'付款金额',from:'COMPUTED/PAYMONEY-PARENT',filter:'money'},
-                {name:'付款时间',from:'updated_at',filter:'date'},
-                {name:'订单号',from:'order._id'},
-                {name:'家长ID',from:'order.parent._id'},
-                {name:'家长姓名',from:'order.parent.name'},
-                {name:'家教ID',from:'order.teacher._id'},
-                {name:'家教姓名',from:'order.teacher.name'},
-                {name:'订单完成时间（学生完成反馈）',from:'order.reportTime',filter:'date'},
-                {name:'单位价格',from:'order.price',filter:'money'},
-                {name:'交通补贴',from:'order.subsidy',filter:'money'},
-                {name:'专业辅导费',from:'order.professionalTutorPrice',filter:'professionalTutorPrice'},
-                {name:'抵减优惠券',from:'order.coupon.money',filter:'money'},
-                {name:'会员活动编号',from:'vipEvent'},
-            ];
+            tmp.header[6].from = 'COMPUTED/PAYMONEY-PARENT';
             this.reload(1);
         }
         return tmp;
@@ -1669,15 +1663,19 @@ var SectionReport = Vue.extend({
             {name:'订单号',from:'orderNumber'},
             {name:'家教ID',from:'teacher._id'},
             {name:'家教姓名',from:'teacher.name'},
+            {name:'家教手机',from:'teacher.phone'},
             {name:'家长ID',from:'parent._id'},
             {name:'家长姓名',from:'parent.name'},
+            {name:'家长手机',from:'parent.phone'},
+            {name:'授课时间',from:'teachTime',filter:'reportTeachTime'},
             {name:'授课科目',from:'course'},
             {name:'完成反馈时间',from:'updated_at',filter:'date'},
 
-            {name:'上次情况-阶段',from:'thisTeachDetail.category'},
             {name:'上次情况-专业辅导科目',from:'thisTeachDetail.course'},
             {name:'上次情况-专业辅导年级',from:'thisTeachDetail.grade'},
-            {name:'上次情况-针对性知识点补习/复习模拟卷',from:'thisTeachDetail.examPaper'},
+            {name:'上次情况-阶段',from:'thisTeachDetail.category'},
+            {name:'上次情况-教学类型',from:'thisTeachDetail.teachWay',filter:'radio/teach_way'},
+            {name:'上次情况-复习模拟卷类型',from:'thisTeachDetail.examPaper'},
             {name:'上次情况-难易程度',from:'thisTeachDetail.easyLevel'},
             {name:'上次情况-年级/一级知识点1',from:'thisTeachDetail.knowledge',filter:'knowledge/0'},
             {name:'上次情况-大章节/二级知识点1',from:'thisTeachDetail.knowledge',filter:'knowledge/1'},
@@ -1687,12 +1685,13 @@ var SectionReport = Vue.extend({
             {name:'上次情况-小章节/三级知识点2',from:'thisTeachDetail.knowledge',filter:'knowledge/5'},
             {name:'上次情况-年级/一级知识点3',from:'thisTeachDetail.knowledge',filter:'knowledge/6'},
             {name:'上次情况-大章节/二级知识点3',from:'thisTeachDetail.knowledge',filter:'knowledge/7'},
-            {name:'上次情况-小章节/三级知识点3',from:'thisTeachDetail.knowledge',filter:'knowledge/8'},
+            {name:'上次情况-小章节/三级知识点3',from:'thisTeachDetail.knowledge',filter:'knowledge/8'},          
 
-            {name:'下次情况-阶段',from:'nextTeachDetail.category'},
             {name:'下次情况-专业辅导科目',from:'nextTeachDetail.course'},
             {name:'下次情况-专业辅导年级',from:'nextTeachDetail.grade'},
-            {name:'下次情况-针对性知识点补习/复习模拟卷',from:'nextTeachDetail.examPaper'},
+            {name:'下次情况-阶段',from:'nextTeachDetail.category'},
+            {name:'下次情况-教学类型',from:'nextTeachDetail.teachWay',filter:'radio/teach_way'},
+            {name:'下次情况-复习模拟卷类型',from:'nextTeachDetail.examPaper'},
             {name:'下次情况-难易程度',from:'nextTeachDetail.easyLevel'},
             {name:'下次情况-年级/一级知识点1',from:'nextTeachDetail.knowledge',filter:'knowledge/0'},
             {name:'下次情况-大章节/二级知识点1',from:'nextTeachDetail.knowledge',filter:'knowledge/1'},
@@ -1703,6 +1702,11 @@ var SectionReport = Vue.extend({
             {name:'下次情况-年级/一级知识点3',from:'nextTeachDetail.knowledge',filter:'knowledge/6'},
             {name:'下次情况-大章节/二级知识点3',from:'nextTeachDetail.knowledge',filter:'knowledge/7'},
             {name:'下次情况-小章节/三级知识点3',from:'nextTeachDetail.knowledge',filter:'knowledge/8'},
+
+
+            {name:'正确率',from:'rightPercent'},
+            {name:'学生本次积极性',from:'enthusiasm'},
+            {name:'学生本次吸收程度',from:'getLevel'}  
         ];
         
         if (this.$route.params['type_id'] === '0') {
@@ -1898,6 +1902,12 @@ var Store = {
     safeLockPsw: 'jiajiaoyi',
     getter: function(data,key) {
         switch (key) {
+            case 'COMPUTED/EVENTBOOKPAY':
+            if (data.payType === 3) {
+                return -data.vipEvent.score+ ' 积分';
+            } else {
+                return -(data.vipEvent.money/100).toFixed(2) + ' 元';
+            }
             case 'COMPUTED/SUM':
                 var price = data.price;
                 var time = data.time;
@@ -1920,9 +1930,9 @@ var Store = {
             case 'COMPUTED/EVENTSTATE':
                 if( data.isPublish ) {
                     if (data.bookCount < data.allowCount) {
-                        return '接受预定/未订满';
+                        return '接受预订/未订满';
                     } else {
-                        return '接受预定/已订满';
+                        return '接受预订/已订满';
                     }
                 } else {
                     return '已下线';
@@ -1993,6 +2003,16 @@ var Store = {
     },
     filter: function(str,type) {
         switch(type) {
+            case 'reportTeachTime':
+            var timeStr = '';
+            if (str.time === 'morning') {
+                timeStr = '上午';
+            } else if (str.time === 'afternoon') {
+                timeStr = '下午';
+            } else {
+                timeStr = '晚上';
+            }
+            return str.date + ' ' + timeStr;
             case 'professionalTutorPrice':
             if (str === -1) {
                 return '无';
@@ -2031,7 +2051,7 @@ var Store = {
                     daytime.push('晚上');
                 }
 
-                new_str.push(str[i].date+' '+daytime.join('/')+' '+(str[i].isOk?'接受预定':'不接受预定')+(str[i].memo.length>0?' 备注：'+str[i].memo:""));
+                new_str.push(str[i].date+' '+daytime.join('/')+' '+(str[i].isOk?'接受预订':'不接受预订')+(str[i].memo.length>0?' 备注：'+str[i].memo:""));
             }
             return new_str.join(';');
             case 'teachPrice':
@@ -2055,7 +2075,7 @@ var Store = {
                     daytime.push('晚上');
                 }
 
-                new_str.push(['周日','周一','周二','周三','周四','周五','周六'][str[i].weekDay]+' '+daytime.join('/')+' '+(str[i].isOk?'接受预定':'不接受预定'));
+                new_str.push(['周日','周一','周二','周三','周四','周五','周六'][str[i].weekDay]+' '+daytime.join('/')+' '+(str[i].isOk?'接受预订':'不接受预订'));
             }
             return new_str.join(';');
             case 'age':
@@ -2083,7 +2103,7 @@ var Store = {
             case 'radio/user_type':
             return ['家长/家教','家教','家长'][str];
             case 'radio/order_state':
-            return ['已预定','待执行','已修改','已完成','已失效'][str];
+            return ['已预订','待执行','已修改','已完成','已失效'][str];
             case 'radio/gender':
             return ['女','男'][str];
             case 'radio/feedback':
@@ -2106,6 +2126,8 @@ var Store = {
             } else {
                 return str;
             }
+            case 'radio/teach_way':
+            return ['','针对性知识点补习','复习模拟卷'][str];
             case 'date':
             var date = new Date(str);
             return date.getFullYear()+'/'+(date.getMonth()+1)+'/'+date.getDate()+' '+date.getHours()+':'+date.getMinutes()+':'+date.getSeconds();
@@ -2166,36 +2188,41 @@ var Store = {
             {name:'身份证号',from:'teacherMessage.idCard'},
             {name:'家庭地址',from:'position.address'},
             {name:'用户类型',from:'type',filter:'radio/user_type'},
+            {name:'用户级别',from:'TODO'},
             {name:'用户积分',from:'COMPUTED/SCORE'},
+            {name:'不良记录',from:'badRecord'},
             {name:'已完成订单数量',from:'COMPUTED/ORDERCOUNT'},
             {name:'已完成订单时间',from:'COMPUTED/ORDERTIME',filter:'min'},
-            {name:'不良记录',from:'badRecord'},
     ],[
             {name:'宝贝性别',from:'parentMessage.childGender',filter:'age'},
             {name:'宝贝年龄',from:'parentMessage.childAge',filter:'age'},
             {name:'宝贝年级',from:'parentMessage.childGrade'},
     ],[
-            {name:'简介',from:'teacherMessage.profile'},
             {name:'家教专业',from:'teacherMessage.profession'},
             {name:'家教学校',from:'teacherMessage.school'},
             {name:'家教年级',from:'teacherMessage.grade'},
+            {name:'支付宝账户',from:'TODO'},
+            {name:'微信账户',from:'TODO'},
+            {name:'开卡银行',from:'TODO'},
+            {name:'银行账户',from:'TODO'},
             {name:'最小课程时间',from:'teacherMessage.minCourseTime',filter:'min'},
             {name:'免费交通区间',from:'teacherMessage.freeTrafficTime',filter:'min'},
             {name:'最远交通区间',from:'teacherMessage.maxTrafficTime',filter:'min'},
             {name:'交通补贴',from:'teacherMessage.subsidy',filter:'money'},
             {name:'教过孩子数量',from:'teacherMessage.teachCount'},
             {name:'已授课时间',from:'teacherMessage.hadTeach'},
+            {name:'简介',from:'teacherMessage.profile'},
             {name:'综合评分',from:'teacherMessage.score',filter:'score'},
             {name:'专业能力评分',from:'teacherMessage.ability',filter:'score'},
             {name:'宝贝喜爱程度评分',from:'teacherMessage.childAccept',filter:'score'},
             {name:'准时态度评分',from:'teacherMessage.punctualScore',filter:'score'},
-            {name:'审核状态',from:'teacherMessage.checkType',filter:'radio/checkType'},
+            {name:'是否已审核',from:'teacherMessage.checkType',filter:'radio/checkType'},
             {name:'官方认证',from:'teacherMessage.images.official',filter:'img'},
             {name:'身份证照片',from:'teacherMessage.images.idCard',filter:'img'},
             {name:'学生证照片',from:'teacherMessage.images.studentCard',filter:'img'},
-            {name:'是否接受预定',from:'teacherMessage.isLock',filter:'bool/reverse'},
-            {name:'家教可授课情况',from:'teachPrice',filter:'teachPrice'},
-            {name:'家教可授课时间',from:'teacherMessage.multiBookTime',filter:'teachTime'},
+            {name:'是否接受预订',from:'teacherMessage.isLock',filter:'bool/reverse'},
+            {name:'家教可授课列表',from:'teachPrice',filter:'teachPrice'},
+            {name:'多次预约时间',from:'teacherMessage.multiBookTime',filter:'teachTime'},
             {name:'单次预约时间及备注',from:'teacherMessage.singleBookTime',filter:'singleBookTime'},
     ]],
 };
