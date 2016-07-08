@@ -2122,11 +2122,10 @@ var Store = {
         
         //文件名
         var fileName = "表格";
-        
+
         //初始化文件
-        var uri = 'data:text/csv;charset=utf-8,\ufeff' + encodeURIComponent(CSV);
+        var uri = 'data:text/csv;charset=gbk,' + $URL.encode(CSV);
             
-        
         //通过trick方式下载
         var link = document.createElement("a");    
         link.href = uri;
