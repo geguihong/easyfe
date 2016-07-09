@@ -294,6 +294,8 @@ var Modal = Vue.extend({
                             '</div>'+
                             '<update-teach-price v-if=\"view ===\'updateTeachPrice\'\" :obj="obj"></update-teach-price>'+
                             '<update-vip-event v-if=\"view ===\'updateVipEvent\'\" :obj="obj"></update-vip-event>'+
+                            '<wallet v-if=\"view ===\'wallet\'\" :obj="obj"></wallet>'+
+                            '<update-order v-if=\"view ===\'updateOrder\'\" :obj="obj"></update-order>'+
                          '</div>'+
                     '</div>'+
                 '</div>'+
@@ -307,7 +309,6 @@ var UpdateTeachPrice = Vue.extend({
         var tp = this.obj.teachPrice;
         var tmp = {
             form: [],
-            teacher_name: this.obj.name,
             teacher_id: this.obj._id
         };
         for (var i = 0; i != tp.length; i++) {
@@ -321,12 +322,12 @@ var UpdateTeachPrice = Vue.extend({
         }
         return tmp;
     },
-    template:'<ol class="breadcrumb"><li>家教姓名：{{teacher_name}}</li><li>家教ID：{{teacher_id}}</li></ol>'+
+    template:'<ol class="breadcrumb"><li>家教ID：{{teacher_id}}</li></ol>'+
     "<form onSubmit=\"return false;\">\n"+
                 "<div class=\"form-group\" v-for=\"item in form\">\n"+
-                    "<label>{{item.name + ' ' + item.price}}</label>\n"+
-                    "<input style=\"margin: 0 20px;\" type=\"text\" v-model=\"item.vm\">"+
-                    "<button class=\"btn btn-default\" v-on:click=\"submit(item)\">修改</button>\n"+
+                    "<label>{{item.name + ' ' + item.price}}</label><br>\n"+
+                    "<input type=\"text\" v-model=\"item.vm\">"+
+                    "<button v-on:click=\"submit(item)\">修改</button>\n"+
                "</div>\n"+                   
             "</form>",
     methods:{
@@ -358,7 +359,6 @@ var UpdateTeachPrice = Vue.extend({
             }).done(function(data, status, jqXHR){
                 if(data.result=='success'){
                     item.price = parseFloat(new_price).toFixed(2) + '元';
-                    alert('执行成功！');
                 }else{
                     alert('执行失败！');
                 }
@@ -385,15 +385,177 @@ var UpdateVipEvent = Vue.extend({
                 ]
         }
     },
-    template: '<ol class="breadcrumb"><li>修改</li><li>修改会员活动</li></ol>'+
+    template: '<ol class="breadcrumb"><li>修改会员活动</li></ol>'+
                 '<div><dirty-form :form="form" api="/VipEvent/Update" :is-tmp="true"></dirty-form></div>',
 })
 Vue.component('update-vip-event',UpdateVipEvent);
 
+var UpdateOrder = Vue.extend({
+    props: ['obj'],
+    data: function() {
+        return {
+            price: this.processPrice(this.obj.price),
+            vm: {
+                price: '',
+            }
+        };
+    },
+    methods: {
+        processPrice: function(num) {
+            return (num/100).toFixed(2);
+        },
+        submit: function() {
+            if (isNaN(this.vm.price)) {
+                return;
+            }
+
+            if (!confirm('确定要修改单价?')) {
+                return;
+            }
+
+            var tmp = {
+                token: Store.token,
+                orderId: this.obj._id,
+                price: parseInt(this.vm.price*100),
+            };
+
+            var self = this;
+            $.ajax({
+                url: Store.rootUrl+'/discountOrder/price',
+                dataType: 'json',
+                data:JSON.stringify(tmp),
+                type:'POST',
+                contentType: "application/json; charset=utf-8"
+            }).done(function(data, status, jqXHR){
+                if(data.result=='success'){
+                    self.price = self.processPrice(tmp.price);
+                }else{
+                    alert('修改失败');
+                }
+                self.submitLock = false;
+            }).fail(function(data, status, jqXHR){
+               alert('服务器请求超时');
+               self.submitLock = false;
+            });
+        }
+    },
+    template: '<ol class="breadcrumb"><li>修改推广单价</li></ol>'+
+                '<p>特价推广单价</p><p>{{price}} 元</p><div><input type="text" v-model="vm.price"><button v-on:click="submit()">修改</button></div>',
+})
+Vue.component('update-order',UpdateOrder);
+
+var Wallet = Vue.extend({
+    props: ['obj'],
+    data: function() {
+        var tmp = {
+            balance: '',
+            haveWithdraw: '',
+            withdrawing: '',
+            ali: '',
+            wechat: '',
+            bankName: '',
+            bankAccount: '',
+            vm: ['','','',''],
+            modify: false,
+        };
+        var apiEndpoint = Store.rootUrl+'/user/wallet?token='+Store.token+'&_id='+this.obj._id;
+        $.get({
+            url: apiEndpoint,
+            dataType: 'json',
+        }).done(function(data, status, jqXHR){
+            if(data.result=='success'){
+                tmp.balance = (data.data.balance/100).toFixed(2) + ' 元';
+                tmp.haveWithdraw = (data.data.haveWithdraw/100).toFixed(2) + ' 元';
+                tmp.withdrawing = (data.data.withdrawing/100).toFixed(2) + ' 元';
+                tmp.ali = data.data.ali;
+                tmp.wechat = data.data.wechat;
+                tmp.bankName = data.data.bank.name;
+                tmp.bankAccount = data.data.bank.account;
+            }
+        }).fail(function(data, status, jqXHR){
+            alert('服务器请求超时！');
+        });
+        return tmp;
+    },
+    methods: {
+        toggle() {
+            this.modify = !this.modify;
+        },
+        submit(index) {
+            var newVal = this.vm[index];
+
+            if (!confirm('确定修改?')) {
+                return;
+            }
+            var tmp = {
+                token: Store.token,
+                _id: this.obj._id,
+            };
+            switch(index) {
+                case 0:
+                tmp.ali = newVal;
+                break;
+                case 1:
+                tmp.wechat = newVal;
+                break;
+                case 2:
+                tmp.bank = {};
+                tmp.bank.name = newVal;
+                break;
+                case 3:
+                tmp.bank = {};
+                tmp.bank.account = newVal;
+                break;
+            }
+
+            var self = this;
+            $.ajax({
+                url: Store.rootUrl+'/user/payway',
+                dataType: 'json',
+                data:JSON.stringify(tmp),
+                type:'POST',
+                contentType: "application/json; charset=utf-8"
+            }).done(function(data, status, jqXHR){
+                if(data.result=='success'){
+                    switch(index) {
+                        case 0:
+                        self.ali = newVal;
+                        break;
+                        case 1:
+                        self.wechat = newVal;
+                        break;
+                        case 2:
+                        self.bankName = newVal;
+                        break;
+                        case 3:
+                        self.bankAccount = newVal;
+                        break;
+                    }
+                }else{
+                    alert('修改失败');
+                }
+                self.submitLock = false;
+            }).fail(function(data, status, jqXHR){
+               alert('服务器请求超时');
+               self.submitLock = false;
+            });
+        },
+    },
+    template: '<ol class="breadcrumb"><li>钱包信息</li></ol>'+
+                '<p><strong>余额</strong></p><p>{{balance}}</p>'+
+                '<p><strong>已提现金额</strong></p><p>{{haveWithdraw}}</p>'+
+                '<p><strong>正在提现金额</strong></p><p>{{withdrawing}}</p>'+
+                '<a v-on:click="toggle()">开启修改</a>'+
+                '<p><strong>支付宝账户</strong></p><p>{{ali}}</p><div v-if="modify"><input type="text" v-model="vm[0]"><button v-on:click="submit(0)">修改</button></div>'+
+                '<p><strong>微信支付账户</strong></p><p>{{wechat}}</p><div v-if="modify"><input type="text" v-model="vm[1]"><button v-on:click="submit(1)">修改</button></div>'+
+                '<p><strong>银行账户</strong></p><p>银行：{{bankName}}</p><div v-if="modify"><input type="text" v-model="vm[2]"><button v-on:click="submit(2)">修改</button></div><p>卡号：{{bankAccount}}</p><div v-if="modify"><input type="text" v-model="vm[3]"><button v-on:click="submit(3)">修改</button></div>',
+})
+Vue.component('wallet',Wallet);
+
 //Bookmark:动作行
 var ActionRow = Vue.extend({
     props:['postData','preData','actions'],
-    template:'<tr><td><a v-for="action in actions" v-on:click="emit(action)">{{action}}</a></td><td v-for="cell in postData" track-by="$index">{{cell}}</td></tr>',
+    template:'<tr><td style="max-width:none;"><a v-for="action in actions" v-on:click="emit(action)">{{action}}</a></td><td v-for="cell in postData" track-by="$index">{{cell}}</td></tr>',
     methods:{
         checkWithdraw: function(id,state) {
             var tmp = {
@@ -494,7 +656,6 @@ var ActionRow = Vue.extend({
         emit: function(event){
             switch(event) {
                 case '重新审核':
-                console.log(this.preData);
                 this.checkTeacher(this.preData._id,0);
                 break;
                 case '通过':
@@ -508,6 +669,9 @@ var ActionRow = Vue.extend({
                 break;
                 case '下线':
                 this.checkOrder(this.preData._id,false);
+                break;
+                case '修改推广单价':
+                Store.showModal('updateOrder',this.preData);
                 break;
                 case '确认处理':
                 this.checkReport(this.preData._id,1);
@@ -526,6 +690,9 @@ var ActionRow = Vue.extend({
                 break;
                 case '修改授课单价':
                 Store.showModal('updateTeachPrice',this.preData);
+                break;
+                case '钱包':
+                Store.showModal('wallet',this.preData);
                 break;
                 case '查看':
                 detailList = [];
@@ -633,9 +800,9 @@ var SectionAllUser = Vue.extend({
         var tmp={};
         tmp.loaded = false;
         tmp.header = Store.userHeader[0].concat(Store.userHeader[1]).concat(Store.userHeader[2]);
-        tmp.actions = ['查看'];
+        tmp.actions = ['查看','钱包'];
         
-        Store.commonGet('/User?type=0',this);
+        Store.commonGet('/User?type=0',this,false,['_id']);
         return tmp;
     },
     template: '<ol class="breadcrumb"><li>用户管理</li><li>所有用户信息</li></ol>'+
@@ -648,9 +815,9 @@ var SectionParent = Vue.extend({
         var tmp={};
         tmp.loaded = false;
         tmp.header = Store.userHeader[0].concat(Store.userHeader[1]);
-        tmp.actions = ['查看'];
+        tmp.actions = ['查看','钱包'];
         
-        Store.commonGet('/User?type=1',this);
+        Store.commonGet('/User?type=1',this,false,['_id']);
         return tmp;
     },
     template: '<ol class="breadcrumb"><li>用户管理</li><li>家长信息</li></ol>'+
@@ -666,7 +833,7 @@ var SectionTeacher = Vue.extend({
         var tmp={};
         tmp.loaded = false;
         tmp.header = Store.userHeader[0].concat(Store.userHeader[2]);
-        tmp.actions = ['查看','修改授课单价'];
+        tmp.actions = ['查看','钱包','修改授课单价'];
         if (this.$route.params['type_id'] == 'pass'){
             tmp.subtitle = '通过审核的家教';
             tmp.actions.push('重新审核');
@@ -701,9 +868,11 @@ var SectionOrder = Vue.extend({
         tmp.loaded = false;
         tmp.header = [
             {name:'家长ID',from:'parent._id'},
+            {name:'家长编号',from:'todo'},
             {name:'家长姓名',from:'parent.name'},
             {name:'家长手机',from:'parent.phone'},
             {name:'家教ID',from:'teacher._id'},
+            {name:'家教编号',from:'todo'},
             {name:'家教姓名',from:'teacher.name'},
             {name:'家教手机',from:'teacher.phone'},
             {name:'年级',from:'grade'},
@@ -747,6 +916,7 @@ var SectionOrder = Vue.extend({
             case 'd2':
             case 'd3':
             tmp.maintitle = '特价推广管理';
+            tmp.actions.push('修改推广单价');
             break;
         }
         switch(type) {
@@ -788,19 +958,19 @@ var SectionOrder = Vue.extend({
             case 'd1':
             url = '/Order/Discount?type=0';
             tmp.subtitle = '未审核推广';
-            tmp.actions = ['上线'];
+            tmp.actions.push('上线');
             break;
             
             case 'd2':
             url = '/Order/Discount?type=1';
             tmp.subtitle = '已上线推广';
-            tmp.actions = ['下线'];
+            tmp.actions.push('下线');
             break;
             
             case 'd3':
             url = '/Order/Discount?type=2';
             tmp.subtitle = '已下线推广';
-            tmp.actions = ['上线'];
+            tmp.actions.push('上线');
             break;
         }
         
@@ -809,7 +979,7 @@ var SectionOrder = Vue.extend({
     },
     methods: {
         reload: function(url) {
-            Store.commonGet(url,this,false,['_id']);
+            Store.commonGet(url,this,false,['_id','price','type','professionalTutorPrice']);
         }
     },
     template: '<ol class="breadcrumb"><li>{{maintitle}}</li><li>{{subtitle}}</li></ol>'+
@@ -829,6 +999,7 @@ var SectionFeedback = Vue.extend({
                 {name:'反馈ID',from:'_id'},
                 {name:'用户类型',from:'TODO',filter:'radio/user_type'},
                 {name:'用户ID',from:'TODO'},
+                {name:'用户编号',from:'TODO'},
                 {name:'用户姓名',from:'TODO'},
                 {name:'用户手机',from:'TODO'},
                 {name:'反馈类型',from:'type',filter:'radio/feedback'},
@@ -859,7 +1030,9 @@ var SectionWithdraw = Vue.extend({
         var tmp={};
         tmp.loaded = false;
         tmp.header = [
+            {name:'用户类型',from:'todo'},
             {name:'用户ID',from:'user._id'},
+            {name:'用户编号',from:'todo'},
             {name:'用户姓名',from:'user.name'},
             {name:'用户手机',from:'user.phone'},
             {name:'正在申请提现金额',from:'withdraw',filter:'money'},
@@ -951,6 +1124,7 @@ var SectionVipEventBook = Vue.extend({
                 {name:'预约ID',from:'_id'},
                 {name:'用户类型',from:'user.type',filter:'radio/user_type'},
                 {name:'用户ID',from:'user._id'},
+                {name:'用户编号',from:'todo'},
                 {name:'用户姓名',from:'user.name'},
                 {name:'用户手机',from:'user.phone'},
                 {name:'下单时间',from:'updated_at',filter:'date'},
@@ -983,6 +1157,7 @@ var SectionPaylist = Vue.extend({
                 {name:'流水类型',from:'buy',filter:'radio/paylist_type'},
                 {name:'付款人类型',from:'user.type',filter:'radio/user_type'},
                 {name:'付款人ID',from:'user._id'},
+                {name:'付款人编号',from:'todo'},
                 {name:'付款人姓名',from:'user.name'},
                 {name:'付款人手机',from:'user.phone'},
                 {name:'付款金额',from:'COMPUTED/PAYMONEY-TEACHER',filter:'money'},
@@ -990,9 +1165,11 @@ var SectionPaylist = Vue.extend({
                 {name:'会员活动编号',from:'vipEvent'},
                 {name:'订单号',from:'order.orderNumber'},
                 {name:'家长ID',from:'order.parent._id'},
+                {name:'家长编号',from:'todo'},
                 {name:'家长姓名',from:'order.parent.name'},
                 {name:'家长手机',from:'order.parent.phone'},
                 {name:'家教ID',from:'order.teacher._id'},
+                {name:'家教编号',from:'todo'},
                 {name:'家教姓名',from:'order.teacher.name'},
                 {name:'家教手机',from:'order.teacher.phone'},
                 {name:'订单完成时间（学生完成反馈）',from:'order.reportTime',filter:'date'},
@@ -1033,9 +1210,11 @@ var SectionReport = Vue.extend({
         tmp.header = [
             {name:'订单号',from:'orderNumber'},
             {name:'家教ID',from:'teacher._id'},
+            {name:'家教编号',from:'todo'},
             {name:'家教姓名',from:'teacher.name'},
             {name:'家教手机',from:'teacher.phone'},
             {name:'家长ID',from:'parent._id'},
+            {name:'家长编号',from:'todo'},
             {name:'家长姓名',from:'parent.name'},
             {name:'家长手机',from:'parent.phone'},
             {name:'授课时间',from:'teachTime',filter:'reportTeachTime'},
