@@ -210,6 +210,22 @@ var SideBar = Vue.extend({
                     name: '已处理报告',
                     href: '/report/1',
                 }]
+            },{
+                name: '任务奖励',
+                state: '-',
+                items: [{
+                    name: '特价推广奖励',
+                    href: '/reward',
+                },{
+                    name: '邀请注册奖励',
+                    href: '/reward',
+                },{
+                    name: '家教完成课时单价增加奖励',
+                    href: '/reward',
+                },{
+                    name: '家长完成课时现金券奖励',
+                    href: '/reward',
+                }]
             }]
         }
     },
@@ -225,6 +241,153 @@ var SideBar = Vue.extend({
     }
 })
 Vue.component('side-bar', SideBar);
+
+//BookMark:脏检查表单
+var DirtyForm = Vue.extend({
+    props:['form','api','qnToken','isTmp','noWrapper'],
+    data:function() {
+        var tmp = {models:[],submitLock:false};
+        for(var i=0;i!=this.form.length;i++){
+            if (this.form[i].filter === 'array') {
+                var model = {
+                    oldArr: this.form[i].default,
+                    newArr: [],
+                };
+                for(var j=0;j!==model.oldArr.length;j++) {
+                    model.newArr.push(model.oldArr[j]);
+                }
+                tmp.models.push(model);
+            } else {
+                tmp.models.push(this.form[i].default);
+            }
+        }
+        return tmp;
+    },
+    template:"<form onSubmit=\"return false;\">\n"+
+                "<div class=\"form-group\" v-for=\"(key1,item) in form\">\n"+
+                    "<label>{{item.name}}</label><span v-if=\"item.filter!=='array'\" :class=\"{hidden:(models[key1]===item.default)}\">*</span>\n"+
+                    "<template v-if=\"item.filter==='uid'\">\n"+
+                        "<p>{{models[key1]}}</p>\n"+
+                    "</template>\n"+
+                    "<template v-if=\"item.filter==='bool'\">\n"+
+                        "<br><label class=\"radio-inline\"><input v-model=\"models[key1]\" type=\"radio\" :value=\"true\" />是</label><label class=\"radio-inline\"><input v-model=\"models[key1]\" type=\"radio\" :value=\"false\" />否</label>"+
+                    "</template>\n"+
+                    "<template v-if=\"item.filter==='textarea'\">\n"+
+                        "<textarea class=\"form-control\" rows=\"3\" v-model=\"models[key1]\"></textarea>\n"+
+                    "</template>\n"+
+                    "<template v-if=\"item.filter==='img'\">\n"+
+                        "<br><img :src=\"models[key1]\" alt=\"暂无图片\">\n"+
+                        "<input type=\"file\" v-on:change=\"upload($event,key1)\"/>\n"+
+                    "</template>\n"+
+                    "<template v-if=\"item.filter==='array'\">\n"+
+                        "<div v-for=\"(key2,value) in models[key1].newArr\" track-by=\"$index\">{{key2 + 1}}：<input type=\"text\" v-model=\"models[key1].newArr[key2]\"/></div>\n"+
+                    "</template>\n"+
+                    "<template v-if=\"item.filter===undefined\">\n"+
+                        "<br><input class=\"form-control\" type=\"text\" v-model=\"models[key1]\"/>\n"+
+                    "</template>\n"+
+               "</div>\n"+                   
+                "<safe-lock text=\"解锁修改按钮\"><button class=\"btn btn-default\" v-on:click=\"submit\" :disabled=\"submitLock\">修改</button>\n"+
+                "<span>（只改动带*号的数据）</span></safe-lock>\n"+
+            "</form>",
+    methods:{
+        upload: function(e,index) {
+            var self = this;
+            var file = e.target.files[0];
+            var supportedTypes = ['image/jpg', 'image/jpeg', 'image/png'];
+            if (file && supportedTypes.indexOf(file.type) >= 0) {
+                var oMyForm = new FormData();
+                oMyForm.append("token", self.qnToken);
+                oMyForm.append("file", file);
+                oMyForm.append("key", Date.parse(new Date()));
+
+                var xhr = new XMLHttpRequest();
+                xhr.open("POST", "http://upload.qiniu.com/");
+                xhr.onreadystatechange = function(response) {
+                    if (xhr.readyState == 4 && xhr.status == 200 && xhr.responseText != "") {
+                        var blkRet = JSON.parse(xhr.responseText);
+                        console && console.log(blkRet);
+                        self.models.$set(index,'http://7xrvd4.com1.z0.glb.clouddn.com/'+blkRet.key);
+                    } else if (xhr.status != 200 && xhr.responseText) {
+                        console && console.log('上传失败');
+                    }
+                };
+                xhr.send(oMyForm);
+            } else {
+                alert('文件格式只支持：jpg、jpeg 和 png');
+            }
+        },
+        submit: function() {
+            var tmp={};
+            var data={};
+            var modified = false;
+            for(var i=0;i!=this.form.length;i++){
+                if(this.form[i].filter === 'uid') {
+                    data = Store.setter(data,this.form[i].from,this.models[i]);
+                    continue;
+                }
+
+                if(this.form[i].filter === 'array') {
+                    var arrayModified = false;
+                    for (var j=0;j!==this.models[i].newArr.length;j++) {
+                        if (this.models[i].newArr[j] !== this.models[i].oldArr[j]) {
+                            arrayModified = true;
+                            break;
+                        }
+                    }
+
+                    if(arrayModified) {
+                        data = Store.setter(data,this.form[i].from,this.models[i].newArr);
+                        modified = true;
+                    }
+                    continue;
+                }
+
+                if(this.form[i].default !== this.models[i]) {
+                    var post;
+                    switch(this.form[i].submitFilter) {
+                        case 'number/100':
+                        post = parseInt(this.models[i]*100);
+                        break;
+                        default:
+                        post = this.models[i];
+                    }
+                    data = Store.setter(data,this.form[i].from,post);
+                    modified = true;
+                }
+            }
+            tmp.token = Store.token;
+            tmp.data = data;
+            
+            if (!modified) {
+                return;
+            }
+            
+            console.log(tmp);
+            var self = this;
+            $.ajax({
+                url: Store.rootUrl+self.api,
+                dataType: 'json',
+                data:JSON.stringify(tmp),
+                type:'POST',
+                contentType: "application/json; charset=utf-8"
+            }).done(function(data, status, jqXHR){
+                if(data.result=='success'){
+                    alert('修改成功');
+                    if (!self.isTmp) {
+                        location.reload();
+                    }
+                }else{
+                    alert('修改失败');
+                }
+                self.submitLock = false;
+            }).fail(function(data, status, jqXHR){
+               alert('服务器请求超时');
+               self.submitLock = false;
+            });
+        }
+    }
+})
+Vue.component('dirty-form',DirtyForm);
 
 //route:login
 var PageLogin = Vue.extend({
@@ -296,6 +459,7 @@ var Modal = Vue.extend({
                             '<update-vip-event v-if=\"view ===\'updateVipEvent\'\" :obj="obj"></update-vip-event>'+
                             '<wallet v-if=\"view ===\'wallet\'\" :obj="obj"></wallet>'+
                             '<update-order v-if=\"view ===\'updateOrder\'\" :obj="obj"></update-order>'+
+                            '<update-report v-if=\"view ===\'updateReport\'\" :obj="obj"></update-report>'+
                          '</div>'+
                     '</div>'+
                 '</div>'+
@@ -389,6 +553,26 @@ var UpdateVipEvent = Vue.extend({
                 '<div><dirty-form :form="form" api="/VipEvent/Update" :is-tmp="true"></dirty-form></div>',
 })
 Vue.component('update-vip-event',UpdateVipEvent);
+
+var UpdateReport = Vue.extend({
+    props: ['obj'],
+    data: function() {
+        return {
+            form: [
+                 {name:'订单ID',from:'orderId',default:this.obj._id,filter:'uid'},
+                 {name:'难易程度',from:'thisTeachDetail.easyLevel',default:this.obj.thisTeachDetail.easyLevel},
+                 {name:'专业辅导科目',from:'thisTeachDetail.course',default:this.obj.thisTeachDetail.course},
+                 {name:'专业辅导年级',from:'thisTeachDetail.grade',default:this.obj.thisTeachDetail.grade},
+                 {name:'阶段',from:'thisTeachDetail.category',default:this.obj.thisTeachDetail.category},
+                 {name:'复习模拟卷类型',from:'thisTeachDetail.examPaper',default:this.obj.thisTeachDetail.examPaper},
+                 {name:'知识点',from:'thisTeachDetail.knowledge',default:this.obj.thisTeachDetail.knowledge,filter:'array'}
+                ]
+        }
+    },
+    template: '<ol class="breadcrumb"><li>修改这次反馈报告</li></ol>'+
+                '<div><dirty-form :form="form" api="/Update/Order/Report/ThisTeachDetail" :is-tmp="true" :no-wrapper="true"></dirty-form></div>',
+})
+Vue.component('update-report',UpdateReport);
 
 var UpdateOrder = Vue.extend({
     props: ['obj'],
@@ -688,6 +872,9 @@ var ActionRow = Vue.extend({
                 case '修改活动':
                 Store.showModal('updateVipEvent',this.preData);
                 break;
+                case '修改这次反馈报告':
+                Store.showModal('updateReport',this.preData);
+                break;
                 case '修改授课单价':
                 Store.showModal('updateTeachPrice',this.preData);
                 break;
@@ -868,11 +1055,11 @@ var SectionOrder = Vue.extend({
         tmp.loaded = false;
         tmp.header = [
             {name:'家长ID',from:'parent._id'},
-            {name:'家长编号',from:'todo'},
+            {name:'家长编号',from:'parent.userNumber'},
             {name:'家长姓名',from:'parent.name'},
             {name:'家长手机',from:'parent.phone'},
             {name:'家教ID',from:'teacher._id'},
-            {name:'家教编号',from:'todo'},
+            {name:'家教编号',from:'teacher.userNumber'},
             {name:'家教姓名',from:'teacher.name'},
             {name:'家教手机',from:'teacher.phone'},
             {name:'年级',from:'grade'},
@@ -1030,9 +1217,9 @@ var SectionWithdraw = Vue.extend({
         var tmp={};
         tmp.loaded = false;
         tmp.header = [
-            {name:'用户类型',from:'todo'},
+            {name:'用户类型',from:'user.type',filter:'radio/user_type'},
             {name:'用户ID',from:'user._id'},
-            {name:'用户编号',from:'todo'},
+            {name:'用户编号',from:'user.userNumber'},
             {name:'用户姓名',from:'user.name'},
             {name:'用户手机',from:'user.phone'},
             {name:'正在申请提现金额',from:'withdraw',filter:'money'},
@@ -1078,7 +1265,7 @@ var SectionVipEvent = Vue.extend({
         tmp.loaded = false;
         tmp.header = [
                 {name:'活动ID',from:'_id'},
-                {name:'活动编号',from:'TODO'},
+                {name:'活动编号',from:'vipEventNumber'},
                 {name:'活动标题',from:'title'},
                 {name:'发布时间',from:'created_at',filter:'date'},
                 {name:'活动说明',from:'detail'},
@@ -1157,7 +1344,7 @@ var SectionPaylist = Vue.extend({
                 {name:'流水类型',from:'buy',filter:'radio/paylist_type'},
                 {name:'付款人类型',from:'user.type',filter:'radio/user_type'},
                 {name:'付款人ID',from:'user._id'},
-                {name:'付款人编号',from:'todo'},
+                {name:'付款人编号',from:'user.userNumber'},
                 {name:'付款人姓名',from:'user.name'},
                 {name:'付款人手机',from:'user.phone'},
                 {name:'付款金额',from:'COMPUTED/PAYMONEY-TEACHER',filter:'money'},
@@ -1206,36 +1393,36 @@ var SectionReport = Vue.extend({
     data: function() { 
         var tmp={};
         tmp.loaded = false;
-        tmp.actions = ['查看'];
+        tmp.actions = ['查看','修改这次反馈报告'];
         tmp.header = [
             {name:'订单号',from:'orderNumber'},
             {name:'家教ID',from:'teacher._id'},
-            {name:'家教编号',from:'todo'},
+            {name:'家教编号',from:'teacher.userNumber'},
             {name:'家教姓名',from:'teacher.name'},
             {name:'家教手机',from:'teacher.phone'},
             {name:'家长ID',from:'parent._id'},
-            {name:'家长编号',from:'todo'},
+            {name:'家长编号',from:'parent.userNumber'},
             {name:'家长姓名',from:'parent.name'},
             {name:'家长手机',from:'parent.phone'},
             {name:'授课时间',from:'teachTime',filter:'reportTeachTime'},
             {name:'授课科目',from:'course'},
             {name:'完成反馈时间',from:'updated_at',filter:'date'},
 
-            {name:'上次情况-专业辅导科目',from:'thisTeachDetail.course'},
-            {name:'上次情况-专业辅导年级',from:'thisTeachDetail.grade'},
-            {name:'上次情况-阶段',from:'thisTeachDetail.category'},
-            {name:'上次情况-教学类型',from:'thisTeachDetail.teachWay',filter:'radio/teach_way'},
-            {name:'上次情况-复习模拟卷类型',from:'thisTeachDetail.examPaper'},
-            {name:'上次情况-难易程度',from:'thisTeachDetail.easyLevel'},
-            {name:'上次情况-年级/一级知识点1',from:'thisTeachDetail.knowledge',filter:'knowledge/0'},
-            {name:'上次情况-大章节/二级知识点1',from:'thisTeachDetail.knowledge',filter:'knowledge/1'},
-            {name:'上次情况-小章节/三级知识点1',from:'thisTeachDetail.knowledge',filter:'knowledge/2'},
-            {name:'上次情况-年级/一级知识点2',from:'thisTeachDetail.knowledge',filter:'knowledge/3'},
-            {name:'上次情况-大章节/二级知识点2',from:'thisTeachDetail.knowledge',filter:'knowledge/4'},
-            {name:'上次情况-小章节/三级知识点2',from:'thisTeachDetail.knowledge',filter:'knowledge/5'},
-            {name:'上次情况-年级/一级知识点3',from:'thisTeachDetail.knowledge',filter:'knowledge/6'},
-            {name:'上次情况-大章节/二级知识点3',from:'thisTeachDetail.knowledge',filter:'knowledge/7'},
-            {name:'上次情况-小章节/三级知识点3',from:'thisTeachDetail.knowledge',filter:'knowledge/8'},          
+            {name:'本次情况-专业辅导科目',from:'thisTeachDetail.course'},
+            {name:'本次情况-专业辅导年级',from:'thisTeachDetail.grade'},
+            {name:'本次情况-阶段',from:'thisTeachDetail.category'},
+            {name:'本次情况-教学类型',from:'thisTeachDetail.teachWay',filter:'radio/teach_way'},
+            {name:'本次情况-复习模拟卷类型',from:'thisTeachDetail.examPaper'},
+            {name:'本次情况-难易程度',from:'thisTeachDetail.easyLevel'},
+            {name:'本次情况-年级/一级知识点1',from:'thisTeachDetail.knowledge',filter:'knowledge/0'},
+            {name:'本次情况-大章节/二级知识点1',from:'thisTeachDetail.knowledge',filter:'knowledge/1'},
+            {name:'本次情况-小章节/三级知识点1',from:'thisTeachDetail.knowledge',filter:'knowledge/2'},
+            {name:'本次情况-年级/一级知识点2',from:'thisTeachDetail.knowledge',filter:'knowledge/3'},
+            {name:'本次情况-大章节/二级知识点2',from:'thisTeachDetail.knowledge',filter:'knowledge/4'},
+            {name:'本次情况-小章节/三级知识点2',from:'thisTeachDetail.knowledge',filter:'knowledge/5'},
+            {name:'本次情况-年级/一级知识点3',from:'thisTeachDetail.knowledge',filter:'knowledge/6'},
+            {name:'本次情况-大章节/二级知识点3',from:'thisTeachDetail.knowledge',filter:'knowledge/7'},
+            {name:'本次情况-小章节/三级知识点3',from:'thisTeachDetail.knowledge',filter:'knowledge/8'},          
 
             {name:'下次情况-专业辅导科目',from:'nextTeachDetail.course'},
             {name:'下次情况-专业辅导年级',from:'nextTeachDetail.grade'},
@@ -1270,10 +1457,31 @@ var SectionReport = Vue.extend({
     },
     methods: {
         reload: function(type) {
-            Store.commonGet('/Order/Report?state='+type,this,false,['_id']);
+            Store.commonGet('/Order/Report?state='+type,this,false,['_id','thisTeachDetail']);
         }
     },
     template: '<ol class="breadcrumb"><li>反馈报告</li><li>{{subtitle}}</li></ol>'+
+                '<div><pagination-table v-if="loaded" :post-datas="postDatas" :header="header" :actions="actions"></pagination-table></div>'
+})
+
+//route:Reward
+var SectionReward = Vue.extend({
+    data: function() { 
+        var tmp={};
+        tmp.loaded = false;
+        tmp.header = [
+                
+        ];
+        
+        this.reload();
+        return tmp;
+    },
+    methods: {
+        reload: function(type) {
+            Store.commonGet('/Reward?',this);
+        }
+    },
+    template: '<ol class="breadcrumb"><li>任务奖励</li></ol>'+
                 '<div><pagination-table v-if="loaded" :post-datas="postDatas" :header="header" :actions="actions"></pagination-table></div>'
 })
 
@@ -1316,130 +1524,6 @@ var SectionSendMessage = Vue.extend({
         }
     },
 })
-
-//BookMark:脏检查表单
-var DirtyForm = Vue.extend({
-    props:['form','api','qnToken','isTmp'],
-    data:function() {
-        var tmp = {models:[],submitLock:false};
-        for(var i=0;i!=this.form.length;i++){
-            tmp.models.push(this.form[i].default);
-        }
-        return tmp;
-    },
-    template:"<form onSubmit=\"return false;\">\n"+
-                "<div class=\"form-group\" v-for=\"item in form\">\n"+
-                    "<label>{{item.name}}</label><span :class=\"{hidden:(models[$index]===item.default)}\">*</span>\n"+
-                    "<template v-if=\"item.filter==='uid'\">\n"+
-                        "<p>{{models[$index]}}</p>\n"+
-                    "</template>\n"+
-                    "<template v-if=\"item.filter==='bool'\">\n"+
-                        "<br><label class=\"radio-inline\"><input v-model=\"models[$index]\" type=\"radio\" :value=\"true\" />是</label><label class=\"radio-inline\"><input v-model=\"models[$index]\" type=\"radio\" :value=\"false\" />否</label>"+
-                    "</template>\n"+
-                    "<template v-if=\"item.filter==='textarea'\">\n"+
-                        "<textarea class=\"form-control\" rows=\"3\" v-model=\"models[$index]\"></textarea>\n"+
-                    "</template>\n"+
-                    "<template v-if=\"item.filter==='img'\">\n"+
-                        "<br><img :src=\"models[$index]\" alt=\"暂无图片\">\n"+
-                        "<input type=\"file\" v-on:change=\"upload($event,$index)\"/>\n"+
-                    "</template>\n"+
-                    "<template v-if=\"item.filter===undefined\">\n"+
-                        "<br><input class=\"form-control\" type=\"text\" v-model=\"models[$index]\"/>\n"+
-                    "</template>\n"+
-               "</div>\n"+                   
-                "<safe-lock text=\"解锁修改按钮\"><button class=\"btn btn-default\" v-on:click=\"submit\" :disabled=\"submitLock\">修改</button>\n"+
-                "<span>（只改动带*号的数据）</span></safe-lock>\n"+
-            "</form>",
-    methods:{
-        reset: function() {
-            for(var i=0;i!=this.form.length;i++){
-                this.form[i].default = this.models[i];
-            }
-        },
-        upload: function(e,index) {
-            var self = this;
-            var file = e.target.files[0];
-            var supportedTypes = ['image/jpg', 'image/jpeg', 'image/png'];
-            if (file && supportedTypes.indexOf(file.type) >= 0) {
-                var oMyForm = new FormData();
-                oMyForm.append("token", self.qnToken);
-                oMyForm.append("file", file);
-                oMyForm.append("key", Date.parse(new Date()));
-
-                var xhr = new XMLHttpRequest();
-                xhr.open("POST", "http://upload.qiniu.com/");
-                xhr.onreadystatechange = function(response) {
-                    if (xhr.readyState == 4 && xhr.status == 200 && xhr.responseText != "") {
-                        var blkRet = JSON.parse(xhr.responseText);
-                        console && console.log(blkRet);
-                        self.models.$set(index,'http://7xrvd4.com1.z0.glb.clouddn.com/'+blkRet.key);
-                    } else if (xhr.status != 200 && xhr.responseText) {
-                        console && console.log('上传失败');
-                    }
-                };
-                xhr.send(oMyForm);
-            } else {
-                alert('文件格式只支持：jpg、jpeg 和 png');
-            }
-        },
-        submit: function() {
-            var tmp={};
-            var data={};
-            var modified = false;
-            for(var i=0;i!=this.form.length;i++){
-                if(this.form[i].filter === 'uid') {
-                    data = Store.setter(data,this.form[i].from,this.models[i]);
-                    continue;
-                }
-
-                if(this.form[i].default !== this.models[i]) {
-                    var post;
-                    switch(this.form[i].submitFilter) {
-                        case 'number/100':
-                        post = parseInt(this.models[i]*100);
-                        break;
-                        default:
-                        post = this.models[i];
-                    }
-                    data = Store.setter(data,this.form[i].from,post);
-                    modified = true;
-                }
-            }
-            tmp.token = Store.token;
-            tmp.data = data;
-            
-            if (!modified) {
-                return;
-            }
-            
-            console.log(tmp);
-            var self = this;
-            $.ajax({
-                url: Store.rootUrl+self.api,
-                dataType: 'json',
-                data:JSON.stringify(tmp),
-                type:'POST',
-                contentType: "application/json; charset=utf-8"
-            }).done(function(data, status, jqXHR){
-                if(data.result=='success'){
-                    alert('修改成功');
-                    if (self.isTmp) {
-                        self.reset();
-                    } else {
-                        location.reload();
-                    }
-                }else{
-                    alert('修改失败');
-                }
-                self.submitLock = false;
-            }).fail(function(data, status, jqXHR){
-               alert('服务器请求超时');
-               self.submitLock = false;
-            });
-        }
-    }
-})
-Vue.component('dirty-form',DirtyForm);
 
 //route:onlineParams
 var SectionOnlineParams = Vue.extend({
@@ -1742,6 +1826,9 @@ router.map({
             '/withdraw/:type_id': {
                 component: SectionWithdraw,
             },
+            '/reward': {
+                component: SectionReward,
+            }
         }
     },
 })
@@ -1786,7 +1873,11 @@ var Store = {
                         coupon_money = data.coupon.money;
                     }
                 }
-                return (price + addPrice + professionalTutorPrice) * (time/60) + subsidy - coupon_money;
+                var sum = (price + addPrice + professionalTutorPrice) * (time/60) + subsidy - coupon_money;
+                if (sum < 0) {
+                    sum = 0;
+                }
+                return sum;
             case 'COMPUTED/SCORE':
                 if (data.teacherMessage !== undefined) {
                     return data.teacherMessage.teachScore;
@@ -2046,6 +2137,7 @@ var Store = {
     },
     userHeader:[[
             {name:'用户ID',from:'_id'},
+            {name:'用户编号',from:'userNumber'},
             {name:'姓名',from:'name'},
             {name:'性别',from:'gender',filter:'radio/gender'},
             {name:'生日',from:'birthday',filter:'onlydate'},
@@ -2066,10 +2158,6 @@ var Store = {
             {name:'家教专业',from:'teacherMessage.profession'},
             {name:'家教学校',from:'teacherMessage.school'},
             {name:'家教年级',from:'teacherMessage.grade'},
-            {name:'支付宝账户',from:'TODO'},
-            {name:'微信账户',from:'TODO'},
-            {name:'开卡银行',from:'TODO'},
-            {name:'银行账户',from:'TODO'},
             {name:'最小课程时间',from:'teacherMessage.minCourseTime',filter:'min'},
             {name:'免费交通区间',from:'teacherMessage.freeTrafficTime',filter:'min'},
             {name:'最远交通区间',from:'teacherMessage.maxTrafficTime',filter:'min'},
