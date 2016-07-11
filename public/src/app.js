@@ -685,10 +685,12 @@ var Wallet = Vue.extend({
                 case 2:
                 tmp.bank = {};
                 tmp.bank.name = newVal;
+                tmp.bank.account = this.bankAccount;
                 break;
                 case 3:
                 tmp.bank = {};
                 tmp.bank.account = newVal;
+                tmp.bank.name = this.bankName;
                 break;
             }
 
@@ -710,9 +712,11 @@ var Wallet = Vue.extend({
                         break;
                         case 2:
                         self.bankName = newVal;
+                        self.original.bankName = newVal;
                         break;
                         case 3:
                         self.bankAccount = newVal;
+                        self.original.bankAccount = newVal;
                         break;
                     }
                 }else{
