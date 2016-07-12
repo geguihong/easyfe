@@ -272,6 +272,9 @@ var DirtyForm = Vue.extend({
                     "<template v-if=\"item.filter==='bool'\">\n"+
                         "<br><label class=\"radio-inline\"><input v-model=\"models[key1]\" type=\"radio\" :value=\"true\" />是</label><label class=\"radio-inline\"><input v-model=\"models[key1]\" type=\"radio\" :value=\"false\" />否</label>"+
                     "</template>\n"+
+                    "<template v-if=\"item.filter==='radio/teach_way'\">\n"+
+                        "<br><label class=\"radio-inline\"><input v-model=\"models[key1]\" type=\"radio\" :value=\"1\" />针对性知识点补习</label><label class=\"radio-inline\"><input v-model=\"models[key1]\" type=\"radio\" :value=\"2\" />复习模拟卷</label>"+
+                    "</template>\n"+
                     "<template v-if=\"item.filter==='textarea'\">\n"+
                         "<textarea class=\"form-control\" rows=\"3\" v-model=\"models[key1]\"></textarea>\n"+
                     "</template>\n"+
@@ -560,6 +563,7 @@ var UpdateReport = Vue.extend({
         return {
             form: [
                  {name:'订单ID',from:'orderId',default:this.obj._id,filter:'uid'},
+                 {name:'教学类型',from:'thisTeachDetail.teachWay',default:this.obj.thisTeachDetail.teachWay,filter:'radio/teach_way'},
                  {name:'难易程度',from:'thisTeachDetail.easyLevel',default:this.obj.thisTeachDetail.easyLevel},
                  {name:'专业辅导科目',from:'thisTeachDetail.course',default:this.obj.thisTeachDetail.course},
                  {name:'专业辅导年级',from:'thisTeachDetail.grade',default:this.obj.thisTeachDetail.grade},
@@ -743,6 +747,15 @@ Vue.component('wallet',Wallet);
 //Bookmark:动作行
 var ActionRow = Vue.extend({
     props:['postData','preData','actions'],
+    data: function() {
+        var updateReportActionIndex = $.inArray('修改专业辅导内容',this.actions);
+        if (updateReportActionIndex !== -1) {
+            if (this.preData.thisTeachDetail === undefined) {
+                this.actions.splice(updateReportActionIndex,1);
+            }
+        }
+        return {};
+    },
     template:'<tr><td style="max-width:none;"><a v-for="action in actions" v-on:click="emit(action)">{{action}}</a></td><td v-for="cell in postData" track-by="$index">{{cell}}</td></tr>',
     methods:{
         checkWithdraw: function(id,state) {
@@ -876,7 +889,7 @@ var ActionRow = Vue.extend({
                 case '修改活动':
                 Store.showModal('updateVipEvent',this.preData);
                 break;
-                case '修改这次反馈报告':
+                case '修改专业辅导内容':
                 Store.showModal('updateReport',this.preData);
                 break;
                 case '修改授课单价':
@@ -1124,6 +1137,7 @@ var SectionOrder = Vue.extend({
             case 'n2':
             url = '/Order?state=1';
             tmp.subtitle = '待执行订单';
+            tmp.actions.push('修改专业辅导内容');
             break;
             
             case 'n3':
@@ -1170,7 +1184,7 @@ var SectionOrder = Vue.extend({
     },
     methods: {
         reload: function(url) {
-            Store.commonGet(url,this,false,['_id','price','type','professionalTutorPrice']);
+            Store.commonGet(url,this,false,['_id','price','type','thisTeachDetail']);
         }
     },
     template: '<ol class="breadcrumb"><li>{{maintitle}}</li><li>{{subtitle}}</li></ol>'+
@@ -1188,11 +1202,11 @@ var SectionFeedback = Vue.extend({
         tmp.loaded = false;
         tmp.header = [
                 {name:'反馈ID',from:'_id'},
-                {name:'用户类型',from:'TODO',filter:'radio/user_type'},
-                {name:'用户ID',from:'TODO'},
-                {name:'用户编号',from:'TODO'},
-                {name:'用户姓名',from:'TODO'},
-                {name:'用户手机',from:'TODO'},
+                {name:'用户类型',from:'user.type',filter:'radio/user_type'},
+                {name:'用户ID',from:'user.id'},
+                {name:'用户编号',from:'user.userNumber'},
+                {name:'用户姓名',from:'user.name'},
+                {name:'用户手机',from:'user.phone'},
                 {name:'反馈类型',from:'type',filter:'radio/feedback'},
                 {name:'反馈内容',from:'content'},
                 {name:'提交时间',from:'created_at',filter:'date'},
@@ -1310,12 +1324,12 @@ var SectionVipEventBook = Vue.extend({
         tmp.loaded = false;
         tmp.header = [
                 {name:'活动ID',from:'vipEvent._id'},
-                {name:'活动编号',from:'TODO'},
+                {name:'活动编号',from:'vipEvent.vipEventNumber'},
                 {name:'活动标题',from:'vipEvent.title'},
                 {name:'预约ID',from:'_id'},
                 {name:'用户类型',from:'user.type',filter:'radio/user_type'},
                 {name:'用户ID',from:'user._id'},
-                {name:'用户编号',from:'todo'},
+                {name:'用户编号',from:'user.userNumber'},
                 {name:'用户姓名',from:'user.name'},
                 {name:'用户手机',from:'user.phone'},
                 {name:'下单时间',from:'updated_at',filter:'date'},
@@ -1353,14 +1367,14 @@ var SectionPaylist = Vue.extend({
                 {name:'付款人手机',from:'user.phone'},
                 {name:'付款金额',from:'COMPUTED/PAYMONEY-TEACHER',filter:'money'},
                 {name:'付款时间',from:'updated_at',filter:'date'},
-                {name:'会员活动编号',from:'vipEvent'},
+                {name:'会员活动编号',from:'vipEvent.vipEventNumber'},
                 {name:'订单号',from:'order.orderNumber'},
                 {name:'家长ID',from:'order.parent._id'},
-                {name:'家长编号',from:'todo'},
+                {name:'家长编号',from:'order.parent.userNumber'},
                 {name:'家长姓名',from:'order.parent.name'},
                 {name:'家长手机',from:'order.parent.phone'},
                 {name:'家教ID',from:'order.teacher._id'},
-                {name:'家教编号',from:'todo'},
+                {name:'家教编号',from:'order.teacher.userNumber'},
                 {name:'家教姓名',from:'order.teacher.name'},
                 {name:'家教手机',from:'order.teacher.phone'},
                 {name:'订单完成时间（学生完成反馈）',from:'order.reportTime',filter:'date'},
@@ -1370,13 +1384,13 @@ var SectionPaylist = Vue.extend({
                 {name:'抵减优惠券',from:'order.coupon.money',filter:'money'},
             ];
 
-        if (this.$route.params['type'] == 'teacher') {
+        if (this.$route.params['type'] === 'teacher') {
             tmp.subtitle = '家教流水';
-            this.reload(2);
-        } else if (this.$route.params['type'] == 'parent') {
+            this.reload(1);
+        } else if (this.$route.params['type'] === 'parent') {
             tmp.subtitle = '家长流水';
             tmp.header[6].from = 'COMPUTED/PAYMONEY-PARENT';
-            this.reload(1);
+            this.reload(2);
         }
         return tmp;
     },
@@ -1397,7 +1411,7 @@ var SectionReport = Vue.extend({
     data: function() { 
         var tmp={};
         tmp.loaded = false;
-        tmp.actions = ['查看','修改这次反馈报告'];
+        tmp.actions = ['查看'];
         tmp.header = [
             {name:'订单号',from:'orderNumber'},
             {name:'家教ID',from:'teacher._id'},
@@ -1411,7 +1425,6 @@ var SectionReport = Vue.extend({
             {name:'授课时间',from:'teachTime',filter:'reportTeachTime'},
             {name:'授课科目',from:'course'},
             {name:'完成反馈时间',from:'updated_at',filter:'date'},
-
             {name:'本次情况-专业辅导科目',from:'thisTeachDetail.course'},
             {name:'本次情况-专业辅导年级',from:'thisTeachDetail.grade'},
             {name:'本次情况-阶段',from:'thisTeachDetail.category'},
@@ -1426,8 +1439,7 @@ var SectionReport = Vue.extend({
             {name:'本次情况-小章节/三级知识点2',from:'thisTeachDetail.knowledge',filter:'knowledge/5'},
             {name:'本次情况-年级/一级知识点3',from:'thisTeachDetail.knowledge',filter:'knowledge/6'},
             {name:'本次情况-大章节/二级知识点3',from:'thisTeachDetail.knowledge',filter:'knowledge/7'},
-            {name:'本次情况-小章节/三级知识点3',from:'thisTeachDetail.knowledge',filter:'knowledge/8'},          
-
+            {name:'本次情况-小章节/三级知识点3',from:'thisTeachDetail.knowledge',filter:'knowledge/8'},
             {name:'下次情况-专业辅导科目',from:'nextTeachDetail.course'},
             {name:'下次情况-专业辅导年级',from:'nextTeachDetail.grade'},
             {name:'下次情况-阶段',from:'nextTeachDetail.category'},
@@ -1443,8 +1455,6 @@ var SectionReport = Vue.extend({
             {name:'下次情况-年级/一级知识点3',from:'nextTeachDetail.knowledge',filter:'knowledge/6'},
             {name:'下次情况-大章节/二级知识点3',from:'nextTeachDetail.knowledge',filter:'knowledge/7'},
             {name:'下次情况-小章节/三级知识点3',from:'nextTeachDetail.knowledge',filter:'knowledge/8'},
-
-
             {name:'正确率',from:'rightPercent'},
             {name:'学生本次积极性',from:'enthusiasm'},
             {name:'学生本次吸收程度',from:'getLevel'}  
@@ -1936,7 +1946,7 @@ var Store = {
         var cur = data;
         for(var i=0;i!=arr.length;i++){
             cur = cur[arr[i]];
-            if(cur === undefined){
+            if(cur === undefined||cur === null){
                 break;
             }
         }
@@ -2149,13 +2159,13 @@ var Store = {
             {name:'身份证号',from:'teacherMessage.idCard'},
             {name:'家庭地址',from:'position.address'},
             {name:'用户类型',from:'type',filter:'radio/user_type'},
-            {name:'用户级别',from:'TODO'},
+            {name:'用户等级',from:'level'},
             {name:'用户积分',from:'COMPUTED/SCORE'},
             {name:'不良记录',from:'badRecord'},
             {name:'已完成订单数量',from:'COMPUTED/ORDERCOUNT'},
             {name:'已完成订单时间',from:'COMPUTED/ORDERTIME',filter:'min'},
     ],[
-            {name:'宝贝性别',from:'parentMessage.childGender',filter:'age'},
+            {name:'宝贝性别',from:'parentMessage.childGender',filter:'radio/gender'},
             {name:'宝贝年龄',from:'parentMessage.childAge',filter:'age'},
             {name:'宝贝年级',from:'parentMessage.childGrade'},
     ],[
