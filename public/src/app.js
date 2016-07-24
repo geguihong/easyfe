@@ -756,7 +756,7 @@ var ActionRow = Vue.extend({
         }
         return {};
     },
-    template:'<tr><td style="max-width:none;"><a v-for="action in actions" v-on:click="emit(action)">{{action}}</a></td><td v-for="cell in postData" track-by="$index">{{cell}}</td></tr>',
+    template:'<tr><td style="max-width:none;"><a v-for="action in actions" v-on:click="emit(action)">{{action}}</a></td><td title="{{cell}}" v-for="cell in postData" track-by="$index">{{cell}}</td></tr>',
     methods:{
         checkWithdraw: function(id,state) {
             var tmp = {
@@ -1203,7 +1203,7 @@ var SectionFeedback = Vue.extend({
         tmp.header = [
                 {name:'反馈ID',from:'_id'},
                 {name:'用户类型',from:'user.type',filter:'radio/user_type'},
-                {name:'用户ID',from:'user.id'},
+                {name:'用户ID',from:'user._id'},
                 {name:'用户编号',from:'user.userNumber'},
                 {name:'用户姓名',from:'user.name'},
                 {name:'用户手机',from:'user.phone'},
@@ -1244,7 +1244,7 @@ var SectionWithdraw = Vue.extend({
             {name:'支付方式',from:'COMPUTED/PAYWAY'},
             {name:'最后操作时间',from:'updated_at',filter:'date'},
         ];
-        tmp.actions = [];
+        tmp.actions = ['查看'];
         tmp.subtitle = ['家教未处理提现','家教已处理提现','家长未处理提现','家长已处理提现'][this.$route.params['type_id']];
 
         switch(this.$route.params['type_id']) {
