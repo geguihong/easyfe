@@ -210,22 +210,22 @@ var SideBar = Vue.extend({
                     name: '已处理报告',
                     href: '/report/1',
                 }]
-            },{
-                name: '任务奖励',
-                state: '-',
-                items: [{
-                    name: '特价推广奖励',
-                    href: '/reward',
-                },{
-                    name: '邀请注册奖励',
-                    href: '/reward',
-                },{
-                    name: '家教完成课时单价增加奖励',
-                    href: '/reward',
-                },{
-                    name: '家长完成课时现金券奖励',
-                    href: '/reward',
-                }]
+            // },{
+            //     name: '任务奖励',
+            //     state: '-',
+            //     items: [{
+            //         name: '特价推广奖励',
+            //         href: '/reward',
+            //     },{
+            //         name: '邀请注册奖励',
+            //         href: '/reward',
+            //     },{
+            //         name: '家教完成课时单价增加奖励',
+            //         href: '/reward',
+            //     },{
+            //         name: '家长完成课时现金券奖励',
+            //         href: '/reward',
+            //     }]
             }]
         }
     },
