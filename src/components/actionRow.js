@@ -2,15 +2,17 @@
 var ActionRow = Vue.extend({
     props:['postData','preData','actions'],
     data: function() {
+        var tmp = {};
         var updateReportActionIndex = $.inArray('修改专业辅导内容',this.actions);
+
         if (updateReportActionIndex !== -1) {
             if (this.preData.thisTeachDetail === undefined) {
-                this.actions.splice(updateReportActionIndex,1);
+                tmp.hidden = true;
             }
         }
-        return {};
+        return tmp;
     },
-    template:'<tr><td style="max-width:none;"><a v-for="action in actions" v-on:click="emit(action)">{{action}}</a></td><td title="{{cell}}" v-for="cell in postData" track-by="$index">{{cell}}</td></tr>',
+    template:'<tr><td style="max-width:none;"><a v-if="!hidden" v-for="action in actions" v-on:click="emit(action)">{{action}}</a></td><td title="{{cell}}" v-for="cell in postData" track-by="$index">{{cell}}</td></tr>',
     methods:{
         checkWithdraw: function(id,state) {
             var tmp = {
@@ -126,7 +128,7 @@ var ActionRow = Vue.extend({
                 this.checkOrder(this.preData._id,false);
                 break;
                 case '修改推广单价':
-                Store.showModal('updateOrder',this.preData);
+                Store.showModal('update-order',this.preData);
                 break;
                 case '确认处理':
                 this.checkReport(this.preData._id,1);
@@ -141,13 +143,13 @@ var ActionRow = Vue.extend({
                 this.checkWithdraw(this.preData._id,0);
                 break;
                 case '修改活动':
-                Store.showModal('updateVipEvent',this.preData);
+                Store.showModal('update-vip-event',this.preData);
                 break;
                 case '修改专业辅导内容':
-                Store.showModal('updateReport',this.preData);
+                Store.showModal('update-report',this.preData);
                 break;
                 case '修改授课单价':
-                Store.showModal('updateTeachPrice',this.preData);
+                Store.showModal('update-teach-price',this.preData);
                 break;
                 case '钱包':
                 Store.showModal('wallet',this.preData);
@@ -155,15 +157,17 @@ var ActionRow = Vue.extend({
                 case '查看':
                 detailList = [];
                 for (var i = 0;i != Store.tmpHeader.length;i++) {
-                    var type = '';
-                    if (Store.tmpHeader[i].filter !== 'img' && Store.tmpHeader[i].filter !== 'teachPrice' && Store.tmpHeader[i].filter !== 'teachTime' && Store.tmpHeader[i].filter !== 'singleBookTime') {
-                        type = 'text';
+                    var type;
+                    if (Store.tmpHeader[i].filter === 'img') {
+                        type = 'img';
+                    } else if (Store.tmpHeader[i].isArray){
+                        type = 'array';
                     } else {
-                        type = Store.tmpHeader[i].filter;
+                        type = 'text';
                     }
 
                     var content;
-                    if (type === 'teachPrice' || type === 'teachTime' || type === 'singleBookTime') {
+                    if (Store.tmpHeader[i].isArray) {
                         var arr = this.postData[i].split(';');
                         var new_arr = [];
                         for (var j=0;j!==arr.length;j++) {

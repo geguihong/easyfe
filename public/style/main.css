@@ -48,20 +48,20 @@ input::-webkit-input-placeholder{
 }
 
 .m25{
-    height: 25px;
+    height: 10px;
 }
 .m15{
-    height: 15px;
+    height: 5px;
 }
 .ct{
     text-align: center;
 }
 
 .icon{
-    width: 60%;
+    width: 80px;
 }
 .head{
-    width: 50%;
+    height: 40px;
 }
 
 a.button,input.button

@@ -123,6 +123,38 @@ var Store = {
     },
     filter: function(str,type) {
         switch(type) {
+            case 'detail/discountOrder':
+            var new_str = [];
+            for (var i = 0;i != str.length;i++) {
+                var tmp_money = (str[i].money/100).toFixed(2)+'元';
+                var tmp_finishCount = str[i].finishCount === undefined?'无':str[i].finishCount+'次';
+                new_str.push(str[i].detail+' | 奖励金额：'+tmp_money
+                    +' | 剩余领取次数：'+str[i].count+'次 | 累计完成标准次数：'+tmp_finishCount);
+            }
+            return new_str.join(';');
+
+            case 'detail/invite':
+            var new_str = [];
+            for (var i = 0;i != str.length;i++) {
+                var tmp_type = ['家长/家教','家教','家长'][str[i].type];
+                var tmp_bool = str[i].isRewardGet?'是':'否';
+                new_str.push('被邀请人ID：'+str[i]._id+' | 类型：'+tmp_type+' | 编号：'+str[i].userNumber
+                    +' | 手机：'+str[i].phone+' | 姓名：'+str[i].name+' | 完成订单数量：'+str[i].finishOrderCount
+                    +' | 是否已领取：'+tmp_bool);
+            }
+            return new_str.join(';');
+
+            case 'detail/course_parent':
+            var new_str = [];
+            for (var i = 0;i != str.length;i++) {
+                var tmp_money = (str[i].money/100).toFixed(2)+' 元';
+                var tmp_bool1 = str[i].canGet?'是':'否';
+                var tmp_bool2 = str[i].hasGet?'是':'否';
+                new_str.push('完成课时时间：'+str[i].time+' 分钟 | 积分发放数量：'+str[i].score+' | 现金券发放金额：'+tmp_money
+                    +' | 能否领取：'+tmp_bool1+' | 是否已领取：'+tmp_bool2);
+            }
+            return new_str.join(';');
+
             case 'reportTeachTime':
             var timeStr = '';
             if (str.time === 'morning') {
@@ -133,12 +165,14 @@ var Store = {
                 timeStr = '晚上';
             }
             return str.date + ' ' + timeStr;
+
             case 'professionalTutorPrice':
             if (str === -1) {
                 return '无';
             } else {
                 return (str/100).toFixed(2) + ' 元';
             }
+
             case 'knowledge/0':
             if (str&&str[0]) {return str[0];} else {return '';}
             case 'knowledge/1':
@@ -157,6 +191,7 @@ var Store = {
             if (str&&str[7]) {return str[7];} else {return '';}
             case 'knowledge/8':
             if (str&&str[8]) {return str[8];} else {return '';}
+
             case 'singleBookTime':
             var new_str = [];
             for (var i = 0;i != str.length;i++) {
@@ -174,6 +209,7 @@ var Store = {
                 new_str.push(str[i].date+' '+daytime.join('/')+' '+(str[i].isOk?'接受预订':'不接受预订')+(str[i].memo.length>0?' 备注：'+str[i].memo:""));
             }
             return new_str.join(';');
+
             case 'teachPrice':
             var new_str = [];
             for (var i = 0;i != str.length;i++) {
@@ -181,6 +217,8 @@ var Store = {
                 new_str.push(str[i].course+' '+str[i].grade+' '+((str[i].price+addPrice)/100).toFixed(2)+'元');
             }
             return new_str.join(';');
+
+
             case 'teachTime':
             var new_str = [];
             for (var i = 0;i != str.length;i++) {
@@ -198,6 +236,7 @@ var Store = {
                 new_str.push(['周日','周一','周二','周三','周四','周五','周六'][str[i].weekDay]+' '+daytime.join('/')+' '+(str[i].isOk?'接受预订':'不接受预订'));
             }
             return new_str.join(';');
+
             case 'age':
             return str + ' 岁';
             case 'min':
@@ -228,6 +267,7 @@ var Store = {
             return ['女','男'][str];
             case 'radio/feedback':
             return ['','需求','应用','投诉'][str];
+
             case 'radio/cancelPerson':
             if (str === 'parent') {
                 return '家长';
@@ -236,6 +276,7 @@ var Store = {
             } else {
                 return str;
             }
+
             case 'radio/timeArea':
             if (str === 'morning') {
                 return '上午';
@@ -246,14 +287,18 @@ var Store = {
             } else {
                 return str;
             }
+
             case 'radio/teach_way':
             return ['','针对性知识点补习','复习模拟卷'][str];
+
             case 'date':
             var date = new Date(str);
             return date.getFullYear()+'/'+(date.getMonth()+1)+'/'+date.getDate()+' '+date.getHours()+':'+date.getMinutes()+':'+date.getSeconds();
+            
             case 'onlydate':
             var date = new Date(str);
             return date.getFullYear()+'/'+(date.getMonth()+1)+'/'+date.getDate();
+
             default :
             return str;
         }
@@ -337,9 +382,9 @@ var Store = {
             {name:'身份证照片',from:'teacherMessage.images.idCard',filter:'img'},
             {name:'学生证照片',from:'teacherMessage.images.studentCard',filter:'img'},
             {name:'是否接受预订',from:'teacherMessage.isLock',filter:'bool/reverse'},
-            {name:'家教可授课列表',from:'teachPrice',filter:'teachPrice'},
-            {name:'多次预约时间',from:'teacherMessage.multiBookTime',filter:'teachTime'},
-            {name:'单次预约时间及备注',from:'teacherMessage.singleBookTime',filter:'singleBookTime'},
+            {name:'家教可授课列表',from:'teachPrice',filter:'teachPrice',isArray:true},
+            {name:'多次预约时间',from:'teacherMessage.multiBookTime',filter:'teachTime',isArray:true},
+            {name:'单次预约时间及备注',from:'teacherMessage.singleBookTime',filter:'singleBookTime',isArray:true},
     ]],
     commonGet: function(url,self,returnList,keyList) {
         $.ajax({
@@ -394,15 +439,17 @@ var Store = {
 var ActionRow = Vue.extend({
     props:['postData','preData','actions'],
     data: function() {
+        var tmp = {};
         var updateReportActionIndex = $.inArray('修改专业辅导内容',this.actions);
+
         if (updateReportActionIndex !== -1) {
             if (this.preData.thisTeachDetail === undefined) {
-                this.actions.splice(updateReportActionIndex,1);
+                tmp.hidden = true;
             }
         }
-        return {};
+        return tmp;
     },
-    template:'<tr><td style="max-width:none;"><a v-for="action in actions" v-on:click="emit(action)">{{action}}</a></td><td title="{{cell}}" v-for="cell in postData" track-by="$index">{{cell}}</td></tr>',
+    template:'<tr><td style="max-width:none;"><a v-if="!hidden" v-for="action in actions" v-on:click="emit(action)">{{action}}</a></td><td title="{{cell}}" v-for="cell in postData" track-by="$index">{{cell}}</td></tr>',
     methods:{
         checkWithdraw: function(id,state) {
             var tmp = {
@@ -518,7 +565,7 @@ var ActionRow = Vue.extend({
                 this.checkOrder(this.preData._id,false);
                 break;
                 case '修改推广单价':
-                Store.showModal('updateOrder',this.preData);
+                Store.showModal('update-order',this.preData);
                 break;
                 case '确认处理':
                 this.checkReport(this.preData._id,1);
@@ -533,13 +580,13 @@ var ActionRow = Vue.extend({
                 this.checkWithdraw(this.preData._id,0);
                 break;
                 case '修改活动':
-                Store.showModal('updateVipEvent',this.preData);
+                Store.showModal('update-vip-event',this.preData);
                 break;
                 case '修改专业辅导内容':
-                Store.showModal('updateReport',this.preData);
+                Store.showModal('update-report',this.preData);
                 break;
                 case '修改授课单价':
-                Store.showModal('updateTeachPrice',this.preData);
+                Store.showModal('update-teach-price',this.preData);
                 break;
                 case '钱包':
                 Store.showModal('wallet',this.preData);
@@ -547,15 +594,17 @@ var ActionRow = Vue.extend({
                 case '查看':
                 detailList = [];
                 for (var i = 0;i != Store.tmpHeader.length;i++) {
-                    var type = '';
-                    if (Store.tmpHeader[i].filter !== 'img' && Store.tmpHeader[i].filter !== 'teachPrice' && Store.tmpHeader[i].filter !== 'teachTime' && Store.tmpHeader[i].filter !== 'singleBookTime') {
-                        type = 'text';
+                    var type;
+                    if (Store.tmpHeader[i].filter === 'img') {
+                        type = 'img';
+                    } else if (Store.tmpHeader[i].isArray){
+                        type = 'array';
                     } else {
-                        type = Store.tmpHeader[i].filter;
+                        type = 'text';
                     }
 
                     var content;
-                    if (type === 'teachPrice' || type === 'teachTime' || type === 'singleBookTime') {
+                    if (Store.tmpHeader[i].isArray) {
                         var arr = this.postData[i].split(';');
                         var new_arr = [];
                         for (var j=0;j!==arr.length;j++) {
@@ -749,17 +798,7 @@ var Modal = Vue.extend({
                             '<h4>详情</h4>'+
                         '</div>'+
                         '<div class=\"modal-body\">'+
-                            '<div v-if=\"view ===\'detail\'\" v-for=\"item in obj\" class=\"bundle\" track-by=\"$index\">'+   
-                                '<p class=\"left\"><strong>{{item.name}}</strong></p>'+    
-                                '<p class=\"right\" v-if=\"item.type===\'text\'\" >{{item.content}}</p>'+
-                                '<img class=\"right\" v-if=\"item.type===\'img\'\" :src=\"item.content\" />'+
-                                '<div class=\"right\" v-if=\"item.type===\'teachPrice\'||item.type===\'singleBookTime\'||item.type===\'teachTime\'\"><p v-for=\"second_item in item.content\">{{second_item}}</p></div>'+
-                            '</div>'+
-                            '<update-teach-price v-if=\"view ===\'updateTeachPrice\'\" :obj="obj"></update-teach-price>'+
-                            '<update-vip-event v-if=\"view ===\'updateVipEvent\'\" :obj="obj"></update-vip-event>'+
-                            '<wallet v-if=\"view ===\'wallet\'\" :obj="obj"></wallet>'+
-                            '<update-order v-if=\"view ===\'updateOrder\'\" :obj="obj"></update-order>'+
-                            '<update-report v-if=\"view ===\'updateReport\'\" :obj="obj"></update-report>'+
+                            '<component v-if="view.length > 0" :is="view" :obj="obj"></component>'+
                          '</div>'+
                     '</div>'+
                 '</div>'+
@@ -1064,6 +1103,17 @@ var SideBar = Vue.extend({
     }
 })
 Vue.component('side-bar', SideBar);
+var Detail = Vue.extend({
+    props: ['obj'],
+    template: '<div v-for=\"item in obj\" class=\"bundle\" track-by=\"$index\">'+   
+                                '<p class=\"left\"><strong>{{item.name}}</strong></p>'+    
+                                '<p class=\"right\" v-if=\"item.type===\'text\'\" >{{item.content}}</p>'+
+                                '<img class=\"right\" v-if=\"item.type===\'img\'\" :src=\"item.content\" />'+
+                                '<div class=\"right\" v-if=\"item.type===\'array\'\"><p v-for=\"second_item in item.content\">{{second_item}}</p></div>'+
+                            '</div>'
+})
+
+Vue.component('detail',Detail);
 var UpdateOrder = Vue.extend({
     props: ['obj'],
     data: function() {
@@ -1973,34 +2023,72 @@ var SectionReport = Vue.extend({
 })
 //route:Reward
 var SectionReward = Vue.extend({
+    route: {
+        canReuse: false
+    },
     data: function() {
         var tmp = {
             loaded: false,
-            header: null
+            header: null,
+            actions: ['查看']
         };
         var api = '';
         switch(this.$route.params['type']) {
             case 'discountOrder':
+            api = '/Reward/DiscountOrder';
             tmp.header = [
-                {name:'副标题',from:'advertise.link'},
+                {name:'家教ID',from:'user._id'},
+                {name:'家教编号',from:'user.userNumber'},
+                {name:'家教姓名',from:'user.name'},
+                {name:'家教手机',from:'user.phone'},
+                {name:'奖励详情',from:'discount',filter:'detail/discountOrder',isArray:true}
             ];
             break;
             case 'invite':
+            api = '/reward/invite';
+            tmp.header = [
+                {name:'邀请者类型',from:'invite.type',filter:'radio/user_type'},
+                {name:'邀请者ID',from:'invite._id'},
+                {name:'邀请者编号',from:'invite.userNumber'},
+                {name:'邀请者姓名',from:'invite.name'},
+                {name:'邀请者手机',from:'invite.phone'},
+                {name:'奖励详情',from:'invitedUsers',filter:'detail/invite',isArray:true}
+            ];
             break;
             case 'course_teacher':
+            api = '/reward/course/teacher';
+            tmp.header = [
+                {name:'家教ID',from:'teacher._id'},
+                {name:'家教编号',from:'teacher.userNumber'},
+                {name:'家教姓名',from:'teacher.name'},
+                {name:'家教手机',from:'teacher.phone'},
+                {name:'专业能力评分',from:'teacher.teacherMessage.ability',filter:'score'},
+                {name:'宝贝喜爱程度评分',from:'teacher.teacherMessage.childAccept',filter:'score'},
+                {name:'准时态度评分',from:'teacher.teacherMessage.punctualScore',filter:'score'},
+                {name:'完成课程',from:'course'},
+                {name:'原单价',from:'price',filter:'money'},
+                {name:'增加单价',from:'addPrice',filter:'money'}
+            ];
             break;
             case 'course_parent':
+            api = '/reward/course/parent';
+            tmp.header = [
+                {name:'家长ID',from:'user._id'},
+                {name:'家长编号',from:'user.userNumber'},
+                {name:'家长姓名',from:'user.name'},
+                {name:'家长手机',from:'user.phone'},
+                {name:'完成课程时间',from:'user.parentMessage.finishCourseTime'},
+                {name:'奖励详情',from:'finishCourseTime',filter:'detail/course_parent',isArray:true}
+            ];
             break;
         }
-        tmp.loaded = false;
-        tmp.header = null;
         
-        this.reload();
+        this.reload(api);
         return tmp;
     },
     methods: {
-        reload: function(type) {
-            Store.commonGet('/Reward?',this);
+        reload: function(api) {
+            Store.commonGet(api+'?',this,true);
         }
     },
     template: '<ol class="breadcrumb"><li>任务奖励</li></ol>'+

@@ -123,6 +123,38 @@ var Store = {
     },
     filter: function(str,type) {
         switch(type) {
+            case 'detail/discountOrder':
+            var new_str = [];
+            for (var i = 0;i != str.length;i++) {
+                var tmp_money = (str[i].money/100).toFixed(2)+'元';
+                var tmp_finishCount = str[i].finishCount === undefined?'无':str[i].finishCount+'次';
+                new_str.push(str[i].detail+' | 奖励金额：'+tmp_money
+                    +' | 剩余领取次数：'+str[i].count+'次 | 累计完成标准次数：'+tmp_finishCount);
+            }
+            return new_str.join(';');
+
+            case 'detail/invite':
+            var new_str = [];
+            for (var i = 0;i != str.length;i++) {
+                var tmp_type = ['家长/家教','家教','家长'][str[i].type];
+                var tmp_bool = str[i].isRewardGet?'是':'否';
+                new_str.push('被邀请人ID：'+str[i]._id+' | 类型：'+tmp_type+' | 编号：'+str[i].userNumber
+                    +' | 手机：'+str[i].phone+' | 姓名：'+str[i].name+' | 完成订单数量：'+str[i].finishOrderCount
+                    +' | 是否已领取：'+tmp_bool);
+            }
+            return new_str.join(';');
+
+            case 'detail/course_parent':
+            var new_str = [];
+            for (var i = 0;i != str.length;i++) {
+                var tmp_money = (str[i].money/100).toFixed(2)+' 元';
+                var tmp_bool1 = str[i].canGet?'是':'否';
+                var tmp_bool2 = str[i].hasGet?'是':'否';
+                new_str.push('完成课时时间：'+str[i].time+' 分钟 | 积分发放数量：'+str[i].score+' | 现金券发放金额：'+tmp_money
+                    +' | 能否领取：'+tmp_bool1+' | 是否已领取：'+tmp_bool2);
+            }
+            return new_str.join(';');
+
             case 'reportTeachTime':
             var timeStr = '';
             if (str.time === 'morning') {
@@ -133,12 +165,14 @@ var Store = {
                 timeStr = '晚上';
             }
             return str.date + ' ' + timeStr;
+
             case 'professionalTutorPrice':
             if (str === -1) {
                 return '无';
             } else {
                 return (str/100).toFixed(2) + ' 元';
             }
+
             case 'knowledge/0':
             if (str&&str[0]) {return str[0];} else {return '';}
             case 'knowledge/1':
@@ -157,6 +191,7 @@ var Store = {
             if (str&&str[7]) {return str[7];} else {return '';}
             case 'knowledge/8':
             if (str&&str[8]) {return str[8];} else {return '';}
+
             case 'singleBookTime':
             var new_str = [];
             for (var i = 0;i != str.length;i++) {
@@ -174,6 +209,7 @@ var Store = {
                 new_str.push(str[i].date+' '+daytime.join('/')+' '+(str[i].isOk?'接受预订':'不接受预订')+(str[i].memo.length>0?' 备注：'+str[i].memo:""));
             }
             return new_str.join(';');
+
             case 'teachPrice':
             var new_str = [];
             for (var i = 0;i != str.length;i++) {
@@ -181,6 +217,8 @@ var Store = {
                 new_str.push(str[i].course+' '+str[i].grade+' '+((str[i].price+addPrice)/100).toFixed(2)+'元');
             }
             return new_str.join(';');
+
+
             case 'teachTime':
             var new_str = [];
             for (var i = 0;i != str.length;i++) {
@@ -198,6 +236,7 @@ var Store = {
                 new_str.push(['周日','周一','周二','周三','周四','周五','周六'][str[i].weekDay]+' '+daytime.join('/')+' '+(str[i].isOk?'接受预订':'不接受预订'));
             }
             return new_str.join(';');
+
             case 'age':
             return str + ' 岁';
             case 'min':
@@ -228,6 +267,7 @@ var Store = {
             return ['女','男'][str];
             case 'radio/feedback':
             return ['','需求','应用','投诉'][str];
+
             case 'radio/cancelPerson':
             if (str === 'parent') {
                 return '家长';
@@ -236,6 +276,7 @@ var Store = {
             } else {
                 return str;
             }
+
             case 'radio/timeArea':
             if (str === 'morning') {
                 return '上午';
@@ -246,14 +287,18 @@ var Store = {
             } else {
                 return str;
             }
+
             case 'radio/teach_way':
             return ['','针对性知识点补习','复习模拟卷'][str];
+
             case 'date':
             var date = new Date(str);
             return date.getFullYear()+'/'+(date.getMonth()+1)+'/'+date.getDate()+' '+date.getHours()+':'+date.getMinutes()+':'+date.getSeconds();
+            
             case 'onlydate':
             var date = new Date(str);
             return date.getFullYear()+'/'+(date.getMonth()+1)+'/'+date.getDate();
+
             default :
             return str;
         }
@@ -337,9 +382,9 @@ var Store = {
             {name:'身份证照片',from:'teacherMessage.images.idCard',filter:'img'},
             {name:'学生证照片',from:'teacherMessage.images.studentCard',filter:'img'},
             {name:'是否接受预订',from:'teacherMessage.isLock',filter:'bool/reverse'},
-            {name:'家教可授课列表',from:'teachPrice',filter:'teachPrice'},
-            {name:'多次预约时间',from:'teacherMessage.multiBookTime',filter:'teachTime'},
-            {name:'单次预约时间及备注',from:'teacherMessage.singleBookTime',filter:'singleBookTime'},
+            {name:'家教可授课列表',from:'teachPrice',filter:'teachPrice',isArray:true},
+            {name:'多次预约时间',from:'teacherMessage.multiBookTime',filter:'teachTime',isArray:true},
+            {name:'单次预约时间及备注',from:'teacherMessage.singleBookTime',filter:'singleBookTime',isArray:true},
     ]],
     commonGet: function(url,self,returnList,keyList) {
         $.ajax({
