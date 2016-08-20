@@ -54,7 +54,7 @@ var SectionReward = Vue.extend({
                 {name:'家长编号',from:'user.userNumber'},
                 {name:'家长姓名',from:'user.name'},
                 {name:'家长手机',from:'user.phone'},
-                {name:'完成课程时间',from:'user.parentMessage.finishCourseTime'},
+                {name:'完成课程时间',from:'user.parentMessage.finishCourseTime',filter:'min'},
                 {name:'奖励详情',from:'finishCourseTime',filter:'detail/course_parent',isArray:true}
             ];
             break;
