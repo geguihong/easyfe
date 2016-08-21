@@ -6,9 +6,9 @@ var SectionParent = Vue.extend({
         tmp.header = Store.userHeader[0].concat(Store.userHeader[1]);
         tmp.actions = ['查看','钱包'];
         
-        Store.commonGet('/User?type=1',this,false,['_id']);
+        Store.commonGet('/User?type=1',this,false);
         return tmp;
     },
     template: '<ol class="breadcrumb"><li>用户管理</li><li>家长信息</li></ol>'+
-                '<div><pagination-table v-if="loaded" :post-datas="postDatas" :header="header" :actions="actions"></pagination-table></div>'
+                '<div><pagination-table v-if="loaded" :list="list" :header="header" :actions="actions"></pagination-table></div>'
 })

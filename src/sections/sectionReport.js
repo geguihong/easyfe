@@ -60,15 +60,15 @@ var SectionReport = Vue.extend({
         } else if (this.$route.params['type_id'] === '1'){
             tmp.actions.push('撤回处理');
         }
-        tmp.subtitle = ['已处理报告','未处理报告'][this.$route.params['type_id']];
+        tmp.subtitle = ['未处理报告','已处理报告'][this.$route.params['type_id']];
         this.reload(this.$route.params['type_id']);
         return tmp;
     },
     methods: {
         reload: function(type) {
-            Store.commonGet('/Order/Report?state='+type,this,false,['_id','thisTeachDetail']);
+            Store.commonGet('/Order/Report?state='+type,this,false);
         }
     },
     template: '<ol class="breadcrumb"><li>反馈报告</li><li>{{subtitle}}</li></ol>'+
-                '<div><pagination-table v-if="loaded" :post-datas="postDatas" :header="header" :actions="actions"></pagination-table></div>'
+                '<div><pagination-table v-if="loaded" :list="list" :header="header" :actions="actions"></pagination-table></div>'
 })

@@ -1,19 +1,29 @@
 //Bookmark:动作行
 var ActionRow = Vue.extend({
-    props:['postData','preData','actions'],
+    props:['header','preData','actions'],
     data: function() {
         var tmp = {};
-        var updateReportActionIndex = $.inArray('修改专业辅导内容',this.actions);
+        tmp.postData = this.getArray(this.preData);
 
+        // 操作有可能隐藏
+        var updateReportActionIndex = $.inArray('修改专业辅导内容',this.actions);
         if (updateReportActionIndex !== -1) {
             if (this.preData.thisTeachDetail === undefined) {
                 tmp.hidden = true;
             }
         }
+
         return tmp;
     },
-    template:'<tr><td style="max-width:none;"><a v-if="!hidden" v-for="action in actions" v-on:click="emit(action)">{{action}}</a></td><td title="{{cell}}" v-for="cell in postData" track-by="$index">{{cell}}</td></tr>',
+    template:'<tr>'+
+                '<td style="max-width:none;">'+
+                    '<a v-if="!hidden" v-for="action in actions" v-on:click="emit(action)">{{action}}</a>'+
+                '</td>'+
+                '<td title="{{cell}}" v-for="cell in postData" track-by="$index">{{cell}}</td></tr>',
     methods:{
+        getArray: function(obj) {
+            return Store.objToArray(this.header,obj);
+        },
         checkWithdraw: function(id,state) {
             var tmp = {
                 token: Store.token,

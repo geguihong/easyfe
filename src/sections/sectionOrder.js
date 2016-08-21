@@ -120,10 +120,10 @@ var SectionOrder = Vue.extend({
     },
     methods: {
         reload: function(url) {
-            Store.commonGet(url,this,false,['_id','price','type','thisTeachDetail']);
+            Store.commonGet(url,this,false);
         }
     },
     template: '<ol class="breadcrumb"><li>{{maintitle}}</li><li>{{subtitle}}</li></ol>'+
                 '<order-static></order-static>'+
-                '<div><pagination-table v-if="loaded" :post-datas="postDatas" :header="header" :actions="actions"></pagination-table></div>'
+                '<div><pagination-table v-if="loaded" :list="list" :header="header" :actions="actions"></pagination-table></div>'
 })

@@ -8,8 +8,10 @@ var safeLock = Vue.extend({
         };
     },
     template:"<template v-if=\"safeLock\">\n"+
-                        "<input placeholder=\"请输入安全码...\" type=\"password\" v-model=\"safeLockPsw\" />\n"+
+                    "<form class=\"form-inline\" onSubmit=\"return false\">"+
+                        "<input class=\"form-control\" placeholder=\"请输入安全码...\" type=\"password\" v-model=\"safeLockPsw\" />\n"+
                         "<button class=\"btn btn-default\" v-on:click=\"unlock()\">{{text}}</button>"+
+                    "</form>"+
                     "</template>"+
                     "<template v-if=\"!safeLock\">\n"+
                         "<slot>按钮失效</slot>\n"+

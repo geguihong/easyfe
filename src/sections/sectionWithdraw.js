@@ -41,9 +41,9 @@ var SectionWithdraw = Vue.extend({
     },
     methods: {
         reload: function(type,state) {
-            Store.commonGet('/Withdraw?type='+type+'&state='+state,this,true,['_id']);
+            Store.commonGet('/Withdraw?type='+type+'&state='+state,this,true);
         }
     },
     template: '<ol class="breadcrumb"><li>我的钱包</li><li>{{subtitle}}</li></ol>'+
-                '<div><pagination-table v-if="loaded" :post-datas="postDatas" :header="header" :actions="actions"></pagination-table></div>'
+                '<div><pagination-table v-if="loaded" :list="list" :header="header" :actions="actions"></pagination-table></div>'
 })

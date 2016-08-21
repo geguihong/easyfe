@@ -1,18 +1,30 @@
 var Store = {
-    rootUrl: '/Web',
+    // api 相关
+    rootUrl: '/Web', 
     token: '',
     safeLockPsw: 'jiajiaoyi',
-    tmpHeader: [],
+
+    // 与模态框有关
     modal: {
         close: true,
         view: '',
         obj: null,
+        closeFn: null
     },
-    showModal: function(text,obj) {
+    showModal: function(text,obj,fn) {
         this.modal.close = false;
         this.modal.view = text;
         this.modal.obj = obj;
+        this.modal.closeFn = (fn === undefined)?null:fn;
     },
+    closeModal: function() {
+        this.modal.close = true;
+        this.modal.view = '';
+        this.modal.obj = null;
+        this.modal.closeFn = null;
+    },
+
+    // 数据预处理
     getter: function(data,key) {
         switch (key) {
             case 'COMPUTED/EVENTBOOKPAY':
@@ -93,7 +105,7 @@ var Store = {
 
         var arr = key.split('.');
         var cur = data;
-        for(var i=0;i!=arr.length;i++){
+        for(var i=0;i!==arr.length;i++){
             cur = cur[arr[i]];
             if(cur === undefined||cur === null){
                 break;
@@ -299,10 +311,12 @@ var Store = {
             var date = new Date(str);
             return date.getFullYear()+'/'+(date.getMonth()+1)+'/'+date.getDate();
 
-            default :
+            default:
             return str;
         }
     },
+
+    // 表格导出
     ArrayToCSVConvertor: function(arrData, header) {
         var CSV = "";
         
@@ -343,6 +357,8 @@ var Store = {
         link.click();
         document.body.removeChild(link);
     },
+
+    // 用户表格头部信息
     userHeader:[[
             {name:'用户ID',from:'_id'},
             {name:'用户编号',from:'userNumber'},
@@ -386,42 +402,26 @@ var Store = {
             {name:'多次预约时间',from:'teacherMessage.multiBookTime',filter:'teachTime',isArray:true},
             {name:'单次预约时间及备注',from:'teacherMessage.singleBookTime',filter:'singleBookTime',isArray:true},
     ]],
-    commonGet: function(url,self,returnList,keyList) {
+
+    // 表格数据获取的 api
+    commonGet: function(url,self,isReturnList) {
         $.ajax({
             url:Store.rootUrl+url+'&token='+Store.token,
             dataType: 'json'
         }).done(function(data, status, jqXHR){
             if(data.result=="success"){
+                // 列表可能位于list或data里面
                 var list = [];
-                if (returnList) {
+                if (isReturnList) {
                     list = data.data.list;
                 } else {
                     list = data.data;
                 }
-                self.postDatas = [];
+
+                self.list = [];
                 for(var i in list){
                     var x = list[i];
-                    var item = {
-                        arr: [],
-                        obj: {},
-                    };
-                    for(var j in self.header) {
-                        var str = Store.getter(x,self.header[j].from);
-                        if (str !== undefined ) {
-                            if (self.header[j].filter) {
-                                str = Store.filter(str,self.header[j].filter);
-                            }
-                        } else {
-                            str = '';
-                        }
-                        item.arr.push(str);
-                    }
-                    if (keyList !== undefined) {
-                        for (var k in keyList) {
-                            item.obj[keyList[k]] = Store.getter(x,keyList[k]);
-                        }
-                    }
-                    self.postDatas.push(item);
+                    self.list.push(x);
                 }
 
                 self.loaded = true;
@@ -432,5 +432,24 @@ var Store = {
         }).fail(function(data, status, jqXHR){
             alert('服务器请求超时');
         });
+    },
+
+    // 对象转数组
+    objToArray: function(header,obj) {
+        var arr = [];
+
+        for(var j in header) {
+            var str = this.getter(obj,header[j].from);
+            if (str !== undefined) {
+                if (header[j].filter) {
+                    str = this.filter(str,header[j].filter);
+                }
+            } else {
+                str = '';
+            }
+            arr.push(str);
+        }
+
+        return arr;
     }
 };

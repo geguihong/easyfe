@@ -5,9 +5,7 @@ var Modal = Vue.extend({
     },
     methods: {
         exit: function() {
-            this.close = true;
-            this.view = '';
-            this.obj = null;
+            Store.closeModal();
         }
     },
     template:'<div class="window" v-if=\"!close\">'+

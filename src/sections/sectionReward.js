@@ -69,5 +69,5 @@ var SectionReward = Vue.extend({
         }
     },
     template: '<ol class="breadcrumb"><li>任务奖励</li></ol>'+
-                '<div><pagination-table v-if="loaded" :post-datas="postDatas" :header="header" :actions="actions"></pagination-table></div>'
+                '<div><pagination-table v-if="loaded" :list="list" :header="header" :actions="actions"></pagination-table></div>'
 })

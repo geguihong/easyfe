@@ -1,18 +1,30 @@
 var Store = {
-    rootUrl: '/Web',
+    // api 相关
+    rootUrl: '/Web', 
     token: '',
     safeLockPsw: 'jiajiaoyi',
-    tmpHeader: [],
+
+    // 与模态框有关
     modal: {
         close: true,
         view: '',
         obj: null,
+        closeFn: null
     },
-    showModal: function(text,obj) {
+    showModal: function(text,obj,fn) {
         this.modal.close = false;
         this.modal.view = text;
         this.modal.obj = obj;
+        this.modal.closeFn = (fn === undefined)?null:fn;
     },
+    closeModal: function() {
+        this.modal.close = true;
+        this.modal.view = '';
+        this.modal.obj = null;
+        this.modal.closeFn = null;
+    },
+
+    // 数据预处理
     getter: function(data,key) {
         switch (key) {
             case 'COMPUTED/EVENTBOOKPAY':
@@ -93,7 +105,7 @@ var Store = {
 
         var arr = key.split('.');
         var cur = data;
-        for(var i=0;i!=arr.length;i++){
+        for(var i=0;i!==arr.length;i++){
             cur = cur[arr[i]];
             if(cur === undefined||cur === null){
                 break;
@@ -299,10 +311,12 @@ var Store = {
             var date = new Date(str);
             return date.getFullYear()+'/'+(date.getMonth()+1)+'/'+date.getDate();
 
-            default :
+            default:
             return str;
         }
     },
+
+    // 表格导出
     ArrayToCSVConvertor: function(arrData, header) {
         var CSV = "";
         
@@ -343,6 +357,8 @@ var Store = {
         link.click();
         document.body.removeChild(link);
     },
+
+    // 用户表格头部信息
     userHeader:[[
             {name:'用户ID',from:'_id'},
             {name:'用户编号',from:'userNumber'},
@@ -386,42 +402,26 @@ var Store = {
             {name:'多次预约时间',from:'teacherMessage.multiBookTime',filter:'teachTime',isArray:true},
             {name:'单次预约时间及备注',from:'teacherMessage.singleBookTime',filter:'singleBookTime',isArray:true},
     ]],
-    commonGet: function(url,self,returnList,keyList) {
+
+    // 表格数据获取的 api
+    commonGet: function(url,self,isReturnList) {
         $.ajax({
             url:Store.rootUrl+url+'&token='+Store.token,
             dataType: 'json'
         }).done(function(data, status, jqXHR){
             if(data.result=="success"){
+                // 列表可能位于list或data里面
                 var list = [];
-                if (returnList) {
+                if (isReturnList) {
                     list = data.data.list;
                 } else {
                     list = data.data;
                 }
-                self.postDatas = [];
+
+                self.list = [];
                 for(var i in list){
                     var x = list[i];
-                    var item = {
-                        arr: [],
-                        obj: {},
-                    };
-                    for(var j in self.header) {
-                        var str = Store.getter(x,self.header[j].from);
-                        if (str !== undefined ) {
-                            if (self.header[j].filter) {
-                                str = Store.filter(str,self.header[j].filter);
-                            }
-                        } else {
-                            str = '';
-                        }
-                        item.arr.push(str);
-                    }
-                    if (keyList !== undefined) {
-                        for (var k in keyList) {
-                            item.obj[keyList[k]] = Store.getter(x,keyList[k]);
-                        }
-                    }
-                    self.postDatas.push(item);
+                    self.list.push(x);
                 }
 
                 self.loaded = true;
@@ -432,25 +432,54 @@ var Store = {
         }).fail(function(data, status, jqXHR){
             alert('服务器请求超时');
         });
+    },
+
+    // 对象转数组
+    objToArray: function(header,obj) {
+        var arr = [];
+
+        for(var j in header) {
+            var str = this.getter(obj,header[j].from);
+            if (str !== undefined) {
+                if (header[j].filter) {
+                    str = this.filter(str,header[j].filter);
+                }
+            } else {
+                str = '';
+            }
+            arr.push(str);
+        }
+
+        return arr;
     }
 };
 
 //Bookmark:动作行
 var ActionRow = Vue.extend({
-    props:['postData','preData','actions'],
+    props:['header','preData','actions'],
     data: function() {
         var tmp = {};
-        var updateReportActionIndex = $.inArray('修改专业辅导内容',this.actions);
+        tmp.postData = this.getArray(this.preData);
 
+        // 操作有可能隐藏
+        var updateReportActionIndex = $.inArray('修改专业辅导内容',this.actions);
         if (updateReportActionIndex !== -1) {
             if (this.preData.thisTeachDetail === undefined) {
                 tmp.hidden = true;
             }
         }
+
         return tmp;
     },
-    template:'<tr><td style="max-width:none;"><a v-if="!hidden" v-for="action in actions" v-on:click="emit(action)">{{action}}</a></td><td title="{{cell}}" v-for="cell in postData" track-by="$index">{{cell}}</td></tr>',
+    template:'<tr>'+
+                '<td style="max-width:none;">'+
+                    '<a v-if="!hidden" v-for="action in actions" v-on:click="emit(action)">{{action}}</a>'+
+                '</td>'+
+                '<td title="{{cell}}" v-for="cell in postData" track-by="$index">{{cell}}</td></tr>',
     methods:{
+        getArray: function(obj) {
+            return Store.objToArray(this.header,obj);
+        },
         checkWithdraw: function(id,state) {
             var tmp = {
                 token: Store.token,
@@ -785,9 +814,7 @@ var Modal = Vue.extend({
     },
     methods: {
         exit: function() {
-            this.close = true;
-            this.view = '';
-            this.obj = null;
+            Store.closeModal();
         }
     },
     template:'<div class="window" v-if=\"!close\">'+
@@ -853,13 +880,11 @@ var orderStatic = Vue.extend({
 Vue.component('order-static', orderStatic);
 //Bookmark:分页表
 var PaginationTable = Vue.extend({
-    props:['postDatas','header','actions'],
+    props:['list','header','actions'],
     data:function() {
-        Store.tmpHeader = this.header;
-
         this.datas = [];
-        for(var i=0;i!==this.postDatas.length;i++) {
-            this.datas.push(this.postDatas[i]);
+        for(var i=0;i!==this.list.length;i++) {
+            this.datas.push(this.list[i]);
         }
         tmpPages = this.chunk(this.datas,10);
         return {
@@ -868,7 +893,18 @@ var PaginationTable = Vue.extend({
             keyword: '',
         };
     },
-    template: "<form class=\"form-inline\" onSubmit=\"return false\">\n                    <div class=\"form-group\">\n                        <input type=\"text\" class=\"form-control\" v-model=\"keyword\">\n                    </div>\n                    <button v-on:click=\"search()\" type=\"submit\" class=\"btn btn-default\">搜索</button>\n                    <div style=\"float:right;\"><safe-lock text=\"解锁导出按钮\"><button v-on:click=\"exportTable()\" type=\"submit\" class=\"btn btn-default\">全部导出</button></safe-lock></div>\n                </form>\n                <div class=\"table-responsive\">\n                    <table class=\"table table-hover\">\n                        <thead><tr><th>操作</th><th v-for=\"cell in header\">{{cell.name}}</th></tr></thead>\n                        <tbody><tr is=\"action-row\" v-for=\"item in pages[currentPage]\" :post-data=\"item.arr\" :pre-data=\"item.obj\" :actions=\"actions\"></tr></tbody>\n                    </table>\n                </div>\n                <ul class=\"pagination\"><li v-for=\"page in pages\" v-on:click=\"changePage($index)\" :class=\"{'active':$index===currentPage}\"><a>{{$index+1}}</a></li></ul>",
+    template: "<form class=\"form-inline\" onSubmit=\"return false\">"+
+                "<input type=\"text\" class=\"form-control\" v-model=\"keyword\">"+
+                "<button v-on:click=\"search()\" type=\"submit\" class=\"btn btn-default\">搜索</button>"+
+                "<div style=\"float:right;\"><safe-lock text=\"解锁导出按钮\"><button v-on:click=\"exportTable()\" type=\"submit\" class=\"btn btn-default\">全部导出</button></safe-lock></div>"+
+            "</form>"+
+            "<div class=\"table-responsive\">"+
+                "<table class=\"table table-hover\">"+
+                    "<thead><tr><th>操作</th><th v-for=\"cell in header\">{{cell.name}}</th></tr></thead>"+
+                    "<tbody><tr is=\"action-row\" v-for=\"item in pages[currentPage]\" :header=\"header\" :pre-data=\"item\" :actions=\"actions\"></tr></tbody>"+
+                "</table>"+
+            "</div>"+
+            "<ul class=\"pagination\"><li v-for=\"page in pages\" v-on:click=\"changePage($index)\" :class=\"{'active':$index===currentPage}\"><a>{{$index+1}}</a></li></ul>",
     methods:{
         chunk: function (array, size) {
             var result = [];
@@ -883,7 +919,50 @@ var PaginationTable = Vue.extend({
             this.currentPage = index;
         },
         exportTable: function() {
-            Store.ArrayToCSVConvertor(this.datas,this.header);
+            var header = this.header;
+            var arrData = [];
+            for (var m = 0; m < this.list.length; m++) {
+                arrData.push(Store.objToArray(this.header, this.list[m]));
+            }
+
+            var CSV = "";
+        
+            //添加header
+            var row = "";
+            for (var index in header) {
+                row += header[index].name + ',';
+            }
+            row = row.slice(0, -1);
+            CSV += row + '\r\n';
+            
+            for (var i = 0; i < arrData.length; i++) {
+                var row = "";
+                for (var index=0;index!==arrData[i].length;index++) {
+                    row += '"'+ arrData[i][index] + '",';
+                }
+                row = row.slice(0, row.length - 1);
+                CSV += row + '\r\n';
+            }
+
+            if (CSV == '') {        
+                alert("Invalid data");
+                return;
+            }   
+            
+            //文件名
+            var fileName = "表格";
+
+            //初始化文件
+            var uri = 'data:text/csv;charset=gb2312,' + $URL.encode(CSV);
+                
+            //通过trick方式下载
+            var link = document.createElement("a");    
+            link.href = uri;
+            link.style = "visibility:hidden";
+            link.download = fileName + ".csv";
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
         },
         search: function() {
             if (this.keyword === '') {
@@ -894,13 +973,15 @@ var PaginationTable = Vue.extend({
             
             var nD = [];
             for(var i in this.datas){
-                for(var j in this.datas[i].arr){
-                    if(this.datas[i].arr[j].toString().indexOf(this.keyword) >= 0){
+                var arr = Store.objToArray(this.header, this.datas[i]);
+                for(var j in arr){
+                    if(arr[j].toString().indexOf(this.keyword) >= 0){
                         nD.push(this.datas[i]);
                         break;
                     }
                 }
             }
+
             this.pages = this.chunk(nD,10);
             this.currentPage = 0;
         }
@@ -917,8 +998,10 @@ var safeLock = Vue.extend({
         };
     },
     template:"<template v-if=\"safeLock\">\n"+
-                        "<input placeholder=\"请输入安全码...\" type=\"password\" v-model=\"safeLockPsw\" />\n"+
+                    "<form class=\"form-inline\" onSubmit=\"return false\">"+
+                        "<input class=\"form-control\" placeholder=\"请输入安全码...\" type=\"password\" v-model=\"safeLockPsw\" />\n"+
                         "<button class=\"btn btn-default\" v-on:click=\"unlock()\">{{text}}</button>"+
+                    "</form>"+
                     "</template>"+
                     "<template v-if=\"!safeLock\">\n"+
                         "<slot>按钮失效</slot>\n"+
@@ -1387,8 +1470,17 @@ var Wallet = Vue.extend({
 Vue.component('wallet',Wallet);
 //route:home 
 var PageHome = Vue.extend({
-    template:"<div class=\"container-fluid\">\n                <div class=\"row\">\n                    <!-- 侧边导航 -->\n                    <div class=\"col-xs-2 sidebar\">\n                        <side-bar></side-bar>\n                    </div>\n\n                    <div class=\"col-xs-10 col-xs-offset-2 main\">\n                        <router-view></router-view>\n                    </div>\n                </div>\n            </div>\n"+
-    '<modal></modal>'
+    template:"<div class=\"container-fluid\">"+
+              	"<div class=\"row\">"+
+              		"<div class=\"col-xs-2 sidebar\">"+
+              			"<side-bar></side-bar>"+
+              	    "</div>"+
+              	    "<div class=\"col-xs-10 col-xs-offset-2 main\">"+
+              	        "<router-view></router-view>"+
+              	    "</div>"+
+              	"</div>"+
+              "</div>"+
+    		'<modal></modal>'
 })
 //route:login
 var PageLogin = Vue.extend({
@@ -1471,11 +1563,11 @@ var SectionAllUser = Vue.extend({
         tmp.header = Store.userHeader[0].concat(Store.userHeader[1]).concat(Store.userHeader[2]);
         tmp.actions = ['查看','钱包'];
         
-        Store.commonGet('/User?type=0',this,false,['_id']);
+        Store.commonGet('/User?type=0',this,false);
         return tmp;
     },
     template: '<ol class="breadcrumb"><li>用户管理</li><li>所有用户信息</li></ol>'+
-                '<div><pagination-table v-if="loaded" :post-datas="postDatas" :header="header" :actions="actions"></pagination-table></div>'
+                '<div><pagination-table v-if="loaded" :list="list" :header="header" :actions="actions"></pagination-table></div>'
 })
 //route:Book
 var SectionVipEventBook = Vue.extend({
@@ -1610,7 +1702,7 @@ var SectionFeedback = Vue.extend({
         }
     },
     template: '<ol class="breadcrumb"><li>消息中心</li><li>{{subtitle}}</li></ol>'+
-                '<div><pagination-table v-if="loaded" :post-datas="postDatas" :header="header" :actions="actions"></pagination-table></div>'
+                '<div><pagination-table v-if="loaded" :list="list" :header="header" :actions="actions"></pagination-table></div>'
 })
 //route:guideMap
 var SectionGuideMap = Vue.extend({
@@ -1872,12 +1964,12 @@ var SectionOrder = Vue.extend({
     },
     methods: {
         reload: function(url) {
-            Store.commonGet(url,this,false,['_id','price','type','thisTeachDetail']);
+            Store.commonGet(url,this,false);
         }
     },
     template: '<ol class="breadcrumb"><li>{{maintitle}}</li><li>{{subtitle}}</li></ol>'+
                 '<order-static></order-static>'+
-                '<div><pagination-table v-if="loaded" :post-datas="postDatas" :header="header" :actions="actions"></pagination-table></div>'
+                '<div><pagination-table v-if="loaded" :list="list" :header="header" :actions="actions"></pagination-table></div>'
 })
 //route:parent
 var SectionParent = Vue.extend({
@@ -1887,11 +1979,11 @@ var SectionParent = Vue.extend({
         tmp.header = Store.userHeader[0].concat(Store.userHeader[1]);
         tmp.actions = ['查看','钱包'];
         
-        Store.commonGet('/User?type=1',this,false,['_id']);
+        Store.commonGet('/User?type=1',this,false);
         return tmp;
     },
     template: '<ol class="breadcrumb"><li>用户管理</li><li>家长信息</li></ol>'+
-                '<div><pagination-table v-if="loaded" :post-datas="postDatas" :header="header" :actions="actions"></pagination-table></div>'
+                '<div><pagination-table v-if="loaded" :list="list" :header="header" :actions="actions"></pagination-table></div>'
 })
 //route:Paylist
 var SectionPaylist = Vue.extend({
@@ -1945,7 +2037,7 @@ var SectionPaylist = Vue.extend({
         }
     },
     template: '<ol class="breadcrumb"><li>消息中心</li><li>{{subtitle}}</li></ol>'+
-                '<div><pagination-table v-if="loaded" :post-datas="postDatas" :header="header" :actions="actions"></pagination-table></div>'
+                '<div><pagination-table v-if="loaded" :list="list" :header="header" :actions="actions"></pagination-table></div>'
 })
 //route:Paylist
 var SectionReport = Vue.extend({
@@ -2009,17 +2101,17 @@ var SectionReport = Vue.extend({
         } else if (this.$route.params['type_id'] === '1'){
             tmp.actions.push('撤回处理');
         }
-        tmp.subtitle = ['已处理报告','未处理报告'][this.$route.params['type_id']];
+        tmp.subtitle = ['未处理报告','已处理报告'][this.$route.params['type_id']];
         this.reload(this.$route.params['type_id']);
         return tmp;
     },
     methods: {
         reload: function(type) {
-            Store.commonGet('/Order/Report?state='+type,this,false,['_id','thisTeachDetail']);
+            Store.commonGet('/Order/Report?state='+type,this,false);
         }
     },
     template: '<ol class="breadcrumb"><li>反馈报告</li><li>{{subtitle}}</li></ol>'+
-                '<div><pagination-table v-if="loaded" :post-datas="postDatas" :header="header" :actions="actions"></pagination-table></div>'
+                '<div><pagination-table v-if="loaded" :list="list" :header="header" :actions="actions"></pagination-table></div>'
 })
 //route:Reward
 var SectionReward = Vue.extend({
@@ -2092,7 +2184,7 @@ var SectionReward = Vue.extend({
         }
     },
     template: '<ol class="breadcrumb"><li>任务奖励</li></ol>'+
-                '<div><pagination-table v-if="loaded" :post-datas="postDatas" :header="header" :actions="actions"></pagination-table></div>'
+                '<div><pagination-table v-if="loaded" :list="list" :header="header" :actions="actions"></pagination-table></div>'
 })
 //route:sendMessage
 var SectionSendMessage = Vue.extend({
@@ -2160,11 +2252,11 @@ var SectionTeacher = Vue.extend({
     },
     methods: {
         reload: function(type) {
-            Store.commonGet('/User?type='+type,this,false,['_id','name','teachPrice']);
+            Store.commonGet('/User?type='+type,this,false);
         }
     },
     template: '<ol class="breadcrumb"><li>用户管理</li><li>{{subtitle}}</li></ol>'+
-                '<div><pagination-table v-if="loaded" :post-datas="postDatas" :header="header" :actions="actions"></pagination-table></div>'
+                '<div><pagination-table v-if="loaded" :list="list" :header="header" :actions="actions"></pagination-table></div>'
 })
 
 //route:Event
@@ -2250,11 +2342,11 @@ var SectionWithdraw = Vue.extend({
     },
     methods: {
         reload: function(type,state) {
-            Store.commonGet('/Withdraw?type='+type+'&state='+state,this,true,['_id']);
+            Store.commonGet('/Withdraw?type='+type+'&state='+state,this,true);
         }
     },
     template: '<ol class="breadcrumb"><li>我的钱包</li><li>{{subtitle}}</li></ol>'+
-                '<div><pagination-table v-if="loaded" :post-datas="postDatas" :header="header" :actions="actions"></pagination-table></div>'
+                '<div><pagination-table v-if="loaded" :list="list" :header="header" :actions="actions"></pagination-table></div>'
 })
 //BookMark:全局
 var App = Vue.extend({})

@@ -25,9 +25,9 @@ var SectionTeacher = Vue.extend({
     },
     methods: {
         reload: function(type) {
-            Store.commonGet('/User?type='+type,this,false,['_id','name','teachPrice']);
+            Store.commonGet('/User?type='+type,this,false);
         }
     },
     template: '<ol class="breadcrumb"><li>用户管理</li><li>{{subtitle}}</li></ol>'+
-                '<div><pagination-table v-if="loaded" :post-datas="postDatas" :header="header" :actions="actions"></pagination-table></div>'
+                '<div><pagination-table v-if="loaded" :list="list" :header="header" :actions="actions"></pagination-table></div>'
 })
