@@ -7,7 +7,7 @@ var SectionReward = Vue.extend({
         var tmp = {
             loaded: false,
             header: null,
-            actions: ['查看']
+            actions: []
         };
         var api = '';
         switch(this.$route.params['type']) {

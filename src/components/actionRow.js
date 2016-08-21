@@ -6,57 +6,80 @@ var ActionRow = Vue.extend({
         tmp.postData = this.getArray(this.preData);
 
         // 操作有可能隐藏
-        var updateReportActionIndex = $.inArray('修改专业辅导内容',this.actions);
+        var updateReportActionIndex = -1;
+        for (var i=0;i!==this.actions.length;i++) {
+            if (this.actions[i].tag === '修改专业辅导内容'){
+                updateReportActionIndex = i;
+                break;
+            }
+        }
         if (updateReportActionIndex !== -1) {
             if (this.preData.thisTeachDetail === undefined) {
-                tmp.hidden = true;
+                tmp.hidden = updateReportActionIndex;
             }
         }
 
         return tmp;
     },
     template:'<tr>'+
-                '<td style="max-width:none;">'+
-                    '<a v-if="!hidden" v-for="action in actions" v-on:click="emit(action)">{{action}}</a>'+
+                '<td style="max-width:none;overflow:visible;" class="dropup">'+
+                    '<template v-for="action in actions">'+
+                        '<button v-if="action.type===\'normal\'&&hidden!==$index" v-on:click="emit(action)" class="btn btn-primary" style="margin-right:10px;">{{action.tag}}</button>'+
+                        '<div style="display:inline-block;" class="input-group-btn" v-if="action.type===\'toggle\'">'+
+                            '<button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown">{{action.map[pre(action.related)]}}<span class="caret"></span></button>'+
+                                '<ul class="dropdown-menu">'+
+                                    '<li v-for="(index,item) in action.arr" v-on:click="select(action,index)" track-by="$index"><a>{{item.tag}}</a></li>'+
+                                '</ul>'+
+                        '</div>'+
+                    '</template>'+
                 '</td>'+
                 '<td title="{{cell}}" v-for="cell in postData" track-by="$index">{{cell}}</td></tr>',
     methods:{
+        pre: function(key) {
+            return Store.getter(this.preData,key);
+        },
         getArray: function(obj) {
             return Store.objToArray(this.header,obj);
         },
-        checkWithdraw: function(id,state) {
-            var tmp = {
-                token: Store.token,
-            };
-            tmp['withdrawId'] = id;
-            tmp['state'] = state;
+        select: function(action,index) {
+            var newVal = action.arr[index].val;
+            if (newVal === Store.getter(this.preData,action.related)) {
+                return;
+            }
 
-            $.ajax({
-                url: Store.rootUrl+'/Withdraw',
-                dataType: 'json',
-                data:JSON.stringify(tmp),
-                type:'POST',
-                contentType: "application/json; charset=utf-8"
-            }).done(function(data, status, jqXHR){
-                if(data.result=='success'){
-                    alert('执行成功！');
-                    location.reload();
-                }else{
-                    alert('执行失败！');
-                }
-            }).fail(function(data, status, jqXHR){
-               alert('服务器请求超时！');
-            });
-        },
-        checkOrder: function(id,isShow) {            
             var tmp = {
                 token: Store.token,
             };
-            tmp['orderId'] = id;
-            tmp['isShow'] = isShow;
-            
+            var api;
+            switch(action.module) {
+                case 'teacher':
+                api = '/Teacher/Check';
+                tmp['teacherId'] = this.preData._id;
+                tmp['checkType'] = newVal;
+                break;
+
+                case 'order':
+                api = '/Order/Discount/Check';
+                tmp['orderId'] = this.preData._id;
+                tmp['isShow'] = newVal;
+                break;
+
+                case 'withdraw':
+                api = '/Withdraw';
+                tmp['withdrawId'] = this.preData._id;
+                tmp['state'] = newVal;
+                break;
+
+                case 'report':
+                api = '/Order/Report';
+                tmp['_id'] = this.preData._id;
+                tmp['isProfessionFinish'] = newVal;
+
+            }
+
+            var self = this;
             $.ajax({
-                url: Store.rootUrl+'/Order/Discount/Check',
+                url: Store.rootUrl+api,
                 dataType: 'json',
                 data:JSON.stringify(tmp),
                 type:'POST',
@@ -64,55 +87,11 @@ var ActionRow = Vue.extend({
             }).done(function(data, status, jqXHR){
                 if(data.result=='success'){
                     alert('执行成功！');
-                    location.reload();
-                }else{
-                    alert('执行失败！');
-                }
-            }).fail(function(data, status, jqXHR){
-               alert('服务器请求超时！');
-            });
-        },
-        checkTeacher: function(id,checkType) {            
-            var tmp = {
-                token: Store.token,
-            };
-            tmp['teacherId'] = id;
-            tmp['checkType'] = checkType;
-            
-            $.ajax({
-                url: Store.rootUrl+'/Teacher/Check',
-                dataType: 'json',
-                data:JSON.stringify(tmp),
-                type:'POST',
-                contentType: "application/json; charset=utf-8"
-            }).done(function(data, status, jqXHR){
-                if(data.result=='success'){
-                    alert('执行成功！');
-                    location.reload();
-                }else{
-                    alert('执行失败！');
-                }
-            }).fail(function(data, status, jqXHR){
-               alert('服务器请求超时！');
-            });
-        },
-        checkReport: function(id,isProfessionFinish) {            
-            var tmp = {
-                token: Store.token,
-            };
-            tmp['_id'] = id;
-            tmp['isProfessionFinish'] = isProfessionFinish;
-            
-            $.ajax({
-                url: Store.rootUrl+'/Order/Report',
-                dataType: 'json',
-                data:JSON.stringify(tmp),
-                type:'POST',
-                contentType: "application/json; charset=utf-8"
-            }).done(function(data, status, jqXHR){
-                if(data.result=='success'){
-                    alert('执行成功！');
-                    location.reload();
+                    // 修改 preData 并且重置 postData
+                    var patch = Store.setter({},action.related,newVal);
+                    $.extend(self.preData,patch);
+                    
+                    self.postData = self.getArray(self.preData);
                 }else{
                     alert('执行失败！');
                 }
@@ -121,36 +100,9 @@ var ActionRow = Vue.extend({
             });
         },
         emit: function(event){
-            switch(event) {
-                case '重新审核':
-                this.checkTeacher(this.preData._id,0);
-                break;
-                case '通过':
-                this.checkTeacher(this.preData._id,1);
-                break;
-                case '驳回':
-                this.checkTeacher(this.preData._id,2);
-                break;
-                case '上线':
-                this.checkOrder(this.preData._id,true);
-                break;
-                case '下线':
-                this.checkOrder(this.preData._id,false);
-                break;
+            switch(event.tag) {
                 case '修改推广单价':
                 Store.showModal('update-order',this.preData);
-                break;
-                case '确认处理':
-                this.checkReport(this.preData._id,1);
-                break;
-                case '撤回处理':
-                this.checkReport(this.preData._id,0);
-                break;
-                case '确认提现':
-                this.checkWithdraw(this.preData._id,1);
-                break;
-                case '撤回提现':
-                this.checkWithdraw(this.preData._id,0);
                 break;
                 case '修改活动':
                 Store.showModal('update-vip-event',this.preData);
@@ -166,18 +118,18 @@ var ActionRow = Vue.extend({
                 break;
                 case '查看':
                 detailList = [];
-                for (var i = 0;i != Store.tmpHeader.length;i++) {
+                for (var i = 0;i != this.header.length;i++) {
                     var type;
-                    if (Store.tmpHeader[i].filter === 'img') {
+                    if (this.header[i].filter === 'img') {
                         type = 'img';
-                    } else if (Store.tmpHeader[i].isArray){
+                    } else if (this.header[i].isArray){
                         type = 'array';
                     } else {
                         type = 'text';
                     }
 
                     var content;
-                    if (Store.tmpHeader[i].isArray) {
+                    if (this.header[i].isArray) {
                         var arr = this.postData[i].split(';');
                         var new_arr = [];
                         for (var j=0;j!==arr.length;j++) {
@@ -191,7 +143,7 @@ var ActionRow = Vue.extend({
                     detailList.push({
                         type:  type,
                         content: content,
-                        name: Store.tmpHeader[i].name,
+                        name: this.header[i].name,
                     });
                 }
 

@@ -6,7 +6,13 @@ var SectionReport = Vue.extend({
     data: function() { 
         var tmp={};
         tmp.loaded = false;
-        tmp.actions = ['查看'];
+        tmp.actions = [
+            {type:'normal',tag:'查看'},
+            {type:'toggle',map:{true:'已处理',false:'未处理'},
+                arr:[{tag:'已处理',val:true},{tag:'未处理',val:false}],
+                related:'isProfessionFinish',
+                module:'report'}
+        ];
         tmp.header = [
             {name:'订单号',from:'orderNumber'},
             {name:'家教ID',from:'teacher._id'},
@@ -52,14 +58,10 @@ var SectionReport = Vue.extend({
             {name:'下次情况-小章节/三级知识点3',from:'nextTeachDetail.knowledge',filter:'knowledge/8'},
             {name:'正确率',from:'rightPercent'},
             {name:'学生本次积极性',from:'enthusiasm'},
-            {name:'学生本次吸收程度',from:'getLevel'}  
+            {name:'学生本次吸收程度',from:'getLevel'},
+            {name:'是否已处理',from: 'isProfessionFinish',filter:'bool'}
         ];
         
-        if (this.$route.params['type_id'] === '0') {
-            tmp.actions.push('确认处理');
-        } else if (this.$route.params['type_id'] === '1'){
-            tmp.actions.push('撤回处理');
-        }
         tmp.subtitle = ['未处理报告','已处理报告'][this.$route.params['type_id']];
         this.reload(this.$route.params['type_id']);
         return tmp;

@@ -17,7 +17,7 @@ var SectionFeedback = Vue.extend({
                 {name:'反馈内容',from:'content'},
                 {name:'提交时间',from:'created_at',filter:'date'},
         ];
-        tmp.actions = ['查看'];
+        tmp.actions = [{type:'normal',tag:'查看'}];
         tmp.subtitle = ['所有反馈','需求反馈','应用反馈','投诉反馈'][this.$route.params['type_id']];
         
         this.reload(this.$route.params['type_id']);

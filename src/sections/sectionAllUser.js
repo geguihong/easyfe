@@ -4,7 +4,10 @@ var SectionAllUser = Vue.extend({
         var tmp={};
         tmp.loaded = false;
         tmp.header = Store.userHeader[0].concat(Store.userHeader[1]).concat(Store.userHeader[2]);
-        tmp.actions = ['查看','钱包'];
+        tmp.actions = [
+            {type:'normal',tag:'查看'},
+            {type:'normal',tag:'钱包'}
+        ];
         
         Store.commonGet('/User?type=0',this,false);
         return tmp;

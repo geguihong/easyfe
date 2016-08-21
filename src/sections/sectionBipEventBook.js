@@ -17,6 +17,7 @@ var SectionVipEventBook = Vue.extend({
                 {name:'支付类型',from:'payType',filter:'radio/pay_type'},
                 {name:'支付额度',from:'COMPUTED/EVENTBOOKPAY'},
         ];
+        this.actions = [];
         this.reload();
         return tmp;
     },
@@ -26,5 +27,5 @@ var SectionVipEventBook = Vue.extend({
         }
     },
     template: '<ol class="breadcrumb"><li>会员活动</li><li>会员活动预订情况</li></ol>'+
-                '<div><pagination-table v-if="loaded" :post-datas="postDatas" :header="header" :actions="actions"></pagination-table></div>'
+                '<div><pagination-table v-if="loaded" :list="list" :header="header" :actions="actions"></pagination-table></div>'
 })

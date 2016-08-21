@@ -15,26 +15,28 @@ var SectionWithdraw = Vue.extend({
             {name:'正在申请提现金额',from:'withdraw',filter:'money'},
             {name:'支付方式',from:'COMPUTED/PAYWAY'},
             {name:'最后操作时间',from:'updated_at',filter:'date'},
+            {name:'是否已处理',from: 'state',filter:'bool'}
         ];
-        tmp.actions = ['查看'];
+        tmp.actions = [{type:'normal',tag:'查看'},
+                {type:'toggle',map:{true:'已处理',false:'未处理'},
+                    arr:[{tag:'已处理',val:true},{tag:'未处理',val:false}],
+                    related:'state',
+                    module:'withdraw'}];
+
         tmp.subtitle = ['家教未处理提现','家教已处理提现','家长未处理提现','家长已处理提现'][this.$route.params['type_id']];
 
         switch(this.$route.params['type_id']) {
             case '0':
                 this.reload(1,0);
-                tmp.actions.push('确认提现');
                 break;
             case '1':
                 this.reload(1,1);
-                tmp.actions.push('撤回提现');
                 break;
             case '2':
                 this.reload(2,0);
-                tmp.actions.push('确认提现');
                 break;
             case '3':
                 this.reload(2,1);
-                tmp.actions.push('撤回提现');
                 break;
         }
         return tmp;

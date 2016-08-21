@@ -36,7 +36,7 @@ var SectionOrder = Vue.extend({
             {name:'确认时间',from:'sureTime',filter:'date'},
             {name:'取消者',from:'cancelPerson',filter:'radio/cancelPerson'},
             {name:'是否特价订单',from:'type',filter:'bool/discount'},
-            {name:'特价推广原始单价',from: 'originalPrice',filter: 'money'}
+            {name:'特价推广原始单价',from: 'originalPrice',filter: 'money'},
         ];
         
         tmp.actions = [];
@@ -56,7 +56,15 @@ var SectionOrder = Vue.extend({
             case 'd2':
             case 'd3':
             tmp.maintitle = '特价推广管理';
-            tmp.actions.push('修改推广单价');
+            tmp.actions.push({type:'normal',tag:'修改推广单价'});
+            tmp.header.push({name:'是否已上线',from: 'isShow',filter:'bool'})
+
+            if (type !== 'd0'){
+                tmp.actions.push({type:'toggle',map:{true:'已上线',false:'已下线'},
+                arr:[{tag:'已上线',val:true},{tag:'已下线',val:false}],
+                related:'isShow',
+                module:'order'});
+            }
             break;
         }
         switch(type) {
@@ -73,7 +81,7 @@ var SectionOrder = Vue.extend({
             case 'n2':
             url = '/Order?state=1';
             tmp.subtitle = '待执行订单';
-            tmp.actions.push('修改专业辅导内容');
+            tmp.actions.push({type:'normal',tag:'修改专业辅导内容'});
             break;
             
             case 'n3':
@@ -99,19 +107,16 @@ var SectionOrder = Vue.extend({
             case 'd1':
             url = '/Order/Discount?type=0';
             tmp.subtitle = '未审核推广';
-            tmp.actions.push('上线');
             break;
             
             case 'd2':
             url = '/Order/Discount?type=1';
             tmp.subtitle = '已上线推广';
-            tmp.actions.push('下线');
             break;
             
             case 'd3':
             url = '/Order/Discount?type=2';
             tmp.subtitle = '已下线推广';
-            tmp.actions.push('上线');
             break;
         }
         

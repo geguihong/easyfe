@@ -316,48 +316,6 @@ var Store = {
         }
     },
 
-    // 表格导出
-    ArrayToCSVConvertor: function(arrData, header) {
-        var CSV = "";
-        
-        //添加header
-        var row = "";
-        for (var index in header) {
-            row += header[index].name + ',';
-        }
-        row = row.slice(0, -1);
-        CSV += row + '\r\n';
-        
-        for (var i = 0; i < arrData.length; i++) {
-            var row = "";
-            for (var index=0;index!==arrData[i].arr.length;index++) {
-                row += '"'+ arrData[i].arr[index] + '",';
-            }
-            row = row.slice(0, row.length - 1);
-            CSV += row + '\r\n';
-        }
-
-        if (CSV == '') {        
-            alert("Invalid data");
-            return;
-        }   
-        
-        //文件名
-        var fileName = "表格";
-
-        //初始化文件
-        var uri = 'data:text/csv;charset=gb2312,' + $URL.encode(CSV);
-            
-        //通过trick方式下载
-        var link = document.createElement("a");    
-        link.href = uri;
-        link.style = "visibility:hidden";
-        link.download = fileName + ".csv";
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-    },
-
     // 用户表格头部信息
     userHeader:[[
             {name:'用户ID',from:'_id'},

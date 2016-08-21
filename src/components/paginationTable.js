@@ -19,7 +19,7 @@ var PaginationTable = Vue.extend({
                 "<div style=\"float:right;\"><safe-lock text=\"解锁导出按钮\"><button v-on:click=\"exportTable()\" type=\"submit\" class=\"btn btn-default\">全部导出</button></safe-lock></div>"+
             "</form>"+
             "<div class=\"table-responsive\">"+
-                "<table class=\"table table-hover\">"+
+                "<table class=\"table table-hover\" style=\"margin-top:50px;\">"+
                     "<thead><tr><th>操作</th><th v-for=\"cell in header\">{{cell.name}}</th></tr></thead>"+
                     "<tbody><tr is=\"action-row\" v-for=\"item in pages[currentPage]\" :header=\"header\" :pre-data=\"item\" :actions=\"actions\"></tr></tbody>"+
                 "</table>"+
