@@ -11,17 +11,17 @@ document.getElementById('hide-button').addEventListener('click',function(){
 function getFormJson(form) {
     var o = {};
     var a = form.serializeArray();
-    $.each(a, function () {
-    if (o[this.name] !== undefined) {
-    if (!o[this.name].push) {
-    o[this.name] = [o[this.name]];
+    for(var i=0;i!==a.length;i++) {
+        o[a[i].name] = a[i].value;
     }
-    o[this.name].push(this.value || '');
+
+    // 对手机号码进行检验
+    var phone_pattern=new RegExp(/^\d{11}$/);
+    if (phone_pattern.test(o['phone'])) {
+        return o;
     } else {
-    o[this.name] = this.value || '';
+        return false;
     }
-    });
-    return o;
 }
 
 function GetRequest() {
@@ -39,6 +39,11 @@ function GetRequest() {
 
 $('#invite-button').click(function(){
     var tmp = getFormJson($(this).parent());
+    if (tmp === false) {
+        alert('请输入正确的手机号！');
+        return;
+    }
+
     tmp.inviterId = GetRequest()['inviterId'];
     
     $.ajax({
