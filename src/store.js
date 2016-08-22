@@ -135,27 +135,6 @@ var Store = {
     },
     filter: function(str,type) {
         switch(type) {
-            case 'detail/discountOrder':
-            var new_str = [];
-            for (var i = 0;i != str.length;i++) {
-                var tmp_money = (str[i].money/100).toFixed(2)+'元';
-                var tmp_finishCount = str[i].finishCount === undefined?'无':str[i].finishCount+'次';
-                new_str.push(str[i].detail+' | 奖励金额：'+tmp_money
-                    +' | 剩余领取次数：'+str[i].count+'次 | 累计完成标准次数：'+tmp_finishCount);
-            }
-            return new_str.join(';');
-
-            case 'detail/invite':
-            var new_str = [];
-            for (var i = 0;i != str.length;i++) {
-                var tmp_type = ['家长/家教','家教','家长'][str[i].type];
-                var tmp_bool = str[i].isRewardGet?'是':'否';
-                new_str.push('被邀请人ID：'+str[i]._id+' | 类型：'+tmp_type+' | 编号：'+str[i].userNumber
-                    +' | 手机：'+str[i].phone+' | 姓名：'+str[i].name+' | 完成订单数量：'+str[i].finishOrderCount
-                    +' | 是否已领取：'+tmp_bool);
-            }
-            return new_str.join(';');
-
             case 'detail/course_parent':
             var new_str = [];
             for (var i = 0;i != str.length;i++) {
@@ -363,7 +342,7 @@ var Store = {
     ]],
 
     // 表格数据获取的 api
-    commonGet: function(url,self,isReturnList) {
+    commonGet: function(url,self,isReturnList,divide) {
         $.ajax({
             url:Store.rootUrl+url+'&token='+Store.token,
             dataType: 'json'
@@ -378,9 +357,20 @@ var Store = {
                 }
 
                 self.list = [];
-                for(var i in list){
-                    var x = list[i];
-                    self.list.push(x);
+                if (divide === undefined) {
+                    for(var i in list){
+                        self.list.push(list[i]);
+                    }
+                } else {
+                    for(var i in list){
+                        var src = list[i][divide];
+                        list[i][divide] = undefined;
+                        for(var j=0;j!==src.length;j++) {
+                            var copy = $.extend({},list[i],true);
+                            copy[divide] = src[j];
+                            self.list.push(copy);
+                        }
+                    }
                 }
 
                 self.loaded = true;

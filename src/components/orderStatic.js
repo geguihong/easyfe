@@ -30,10 +30,10 @@ var orderStatic = Vue.extend({
     },
     template: "<form onSubmit=\"return false;\">\n"+
     "<div>"+
-    "<label style=\"margin-right:20px;\">家教ID</label>"+
-    "<input v-model=\"teacher_id\" type=\"text\" />"+
-    "<label style=\"margin-left:20px;margin-right:20px;\">家长ID</label>"+
+    "<label style=\"margin-right:20px;\">家长ID</label>"+
     "<input v-model=\"parent_id\" type=\"text\" />"+
+    "<label style=\"margin-left:20px;margin-right:20px;\">家教ID</label>"+
+    "<input v-model=\"teacher_id\" type=\"text\" />"+
     "<button style=\"margin-left:20px;\" class=\"btn btn-default\" v-on:click=\"query\">提交查询</button>\n"+
     "</div>"+
     "</form>\n"+

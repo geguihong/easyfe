@@ -135,27 +135,6 @@ var Store = {
     },
     filter: function(str,type) {
         switch(type) {
-            case 'detail/discountOrder':
-            var new_str = [];
-            for (var i = 0;i != str.length;i++) {
-                var tmp_money = (str[i].money/100).toFixed(2)+'元';
-                var tmp_finishCount = str[i].finishCount === undefined?'无':str[i].finishCount+'次';
-                new_str.push(str[i].detail+' | 奖励金额：'+tmp_money
-                    +' | 剩余领取次数：'+str[i].count+'次 | 累计完成标准次数：'+tmp_finishCount);
-            }
-            return new_str.join(';');
-
-            case 'detail/invite':
-            var new_str = [];
-            for (var i = 0;i != str.length;i++) {
-                var tmp_type = ['家长/家教','家教','家长'][str[i].type];
-                var tmp_bool = str[i].isRewardGet?'是':'否';
-                new_str.push('被邀请人ID：'+str[i]._id+' | 类型：'+tmp_type+' | 编号：'+str[i].userNumber
-                    +' | 手机：'+str[i].phone+' | 姓名：'+str[i].name+' | 完成订单数量：'+str[i].finishOrderCount
-                    +' | 是否已领取：'+tmp_bool);
-            }
-            return new_str.join(';');
-
             case 'detail/course_parent':
             var new_str = [];
             for (var i = 0;i != str.length;i++) {
@@ -363,7 +342,7 @@ var Store = {
     ]],
 
     // 表格数据获取的 api
-    commonGet: function(url,self,isReturnList) {
+    commonGet: function(url,self,isReturnList,divide) {
         $.ajax({
             url:Store.rootUrl+url+'&token='+Store.token,
             dataType: 'json'
@@ -378,9 +357,20 @@ var Store = {
                 }
 
                 self.list = [];
-                for(var i in list){
-                    var x = list[i];
-                    self.list.push(x);
+                if (divide === undefined) {
+                    for(var i in list){
+                        self.list.push(list[i]);
+                    }
+                } else {
+                    for(var i in list){
+                        var src = list[i][divide];
+                        list[i][divide] = undefined;
+                        for(var j=0;j!==src.length;j++) {
+                            var copy = $.extend({},list[i],true);
+                            copy[divide] = src[j];
+                            self.list.push(copy);
+                        }
+                    }
                 }
 
                 self.loaded = true;
@@ -633,10 +623,10 @@ var orderStatic = Vue.extend({
     },
     template: "<form onSubmit=\"return false;\">\n"+
     "<div>"+
-    "<label style=\"margin-right:20px;\">家教ID</label>"+
-    "<input v-model=\"teacher_id\" type=\"text\" />"+
-    "<label style=\"margin-left:20px;margin-right:20px;\">家长ID</label>"+
+    "<label style=\"margin-right:20px;\">家长ID</label>"+
     "<input v-model=\"parent_id\" type=\"text\" />"+
+    "<label style=\"margin-left:20px;margin-right:20px;\">家教ID</label>"+
+    "<input v-model=\"teacher_id\" type=\"text\" />"+
     "<button style=\"margin-left:20px;\" class=\"btn btn-default\" v-on:click=\"query\">提交查询</button>\n"+
     "</div>"+
     "</form>\n"+
@@ -2335,26 +2325,38 @@ var SectionReward = Vue.extend({
             actions: []
         };
         var api = '';
+        var key;
         switch(this.$route.params['type']) {
             case 'discountOrder':
             api = '/Reward/DiscountOrder';
+            key = 'discount';
             tmp.header = [
                 {name:'家教ID',from:'user._id'},
                 {name:'家教编号',from:'user.userNumber'},
                 {name:'家教姓名',from:'user.name'},
                 {name:'家教手机',from:'user.phone'},
-                {name:'奖励详情',from:'discount',filter:'detail/discountOrder',isArray:true}
+                {name:'奖励描述',from:'discount.detail'},
+                {name:'奖励金额',from:'discount.money',filter:'money'},
+                {name:'剩余领取次数',from:'discount.count'},
+                {name:'累计完成标准次数',from:'discount.finishCount'},
             ];
             break;
             case 'invite':
             api = '/reward/invite';
+            key = 'invitedUsers';
             tmp.header = [
                 {name:'邀请者类型',from:'invite.type',filter:'radio/user_type'},
                 {name:'邀请者ID',from:'invite._id'},
                 {name:'邀请者编号',from:'invite.userNumber'},
                 {name:'邀请者姓名',from:'invite.name'},
                 {name:'邀请者手机',from:'invite.phone'},
-                {name:'奖励详情',from:'invitedUsers',filter:'detail/invite',isArray:true}
+                {name:'被邀请人ID',from:'invitedUsers._id'},
+                {name:'被邀请人类型',from:'invitedUsers.type',filter:'radio/user_type'},
+                {name:'被邀请人编号',from:'invitedUsers.userNumber'},
+                {name:'被邀请人手机',from:'invitedUsers.phone'},
+                {name:'被邀请人姓名',from:'invitedUsers.name'},
+                {name:'完成订单数量',from:'invitedUsers.finishOrderCount'},
+                {name:'是否已领取',from:'invitedUsers.isRewardGet',filter:'bool'},
             ];
             break;
             case 'course_teacher':
@@ -2374,23 +2376,28 @@ var SectionReward = Vue.extend({
             break;
             case 'course_parent':
             api = '/reward/course/parent';
+            key = 'finishCourseTime';
             tmp.header = [
                 {name:'家长ID',from:'user._id'},
                 {name:'家长编号',from:'user.userNumber'},
                 {name:'家长姓名',from:'user.name'},
                 {name:'家长手机',from:'user.phone'},
-                {name:'完成课程时间',from:'user.parentMessage.finishCourseTime',filter:'min'},
-                {name:'奖励详情',from:'finishCourseTime',filter:'detail/course_parent',isArray:true}
+                {name:'总时间',from:'user.parentMessage.finishCourseTime',filter:'min'},
+                {name:'完成课时时间',from:'finishCourseTime.time',filter:'min'},
+                {name:'积分发放数量',from:'finishCourseTime.score'},
+                {name:'现金券发放金额',from:'finishCourseTime.money',filter:'money'},
+                {name:'能否领取',from:'finishCourseTime.canGet',filter:'bool'},
+                {name:'是否已领取',from:'finishCourseTime.hasGet',filter:'bool'},
             ];
             break;
         }
         
-        this.reload(api);
+        this.reload(api,key);
         return tmp;
     },
     methods: {
-        reload: function(api) {
-            Store.commonGet(api+'?',this,true);
+        reload: function(api,key) {
+            Store.commonGet(api+'?',this,true,key);
         }
     },
     template: '<ol class="breadcrumb"><li>任务奖励</li></ol>'+

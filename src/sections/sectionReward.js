@@ -10,26 +10,38 @@ var SectionReward = Vue.extend({
             actions: []
         };
         var api = '';
+        var key;
         switch(this.$route.params['type']) {
             case 'discountOrder':
             api = '/Reward/DiscountOrder';
+            key = 'discount';
             tmp.header = [
                 {name:'家教ID',from:'user._id'},
                 {name:'家教编号',from:'user.userNumber'},
                 {name:'家教姓名',from:'user.name'},
                 {name:'家教手机',from:'user.phone'},
-                {name:'奖励详情',from:'discount',filter:'detail/discountOrder',isArray:true}
+                {name:'奖励描述',from:'discount.detail'},
+                {name:'奖励金额',from:'discount.money',filter:'money'},
+                {name:'剩余领取次数',from:'discount.count'},
+                {name:'累计完成标准次数',from:'discount.finishCount'},
             ];
             break;
             case 'invite':
             api = '/reward/invite';
+            key = 'invitedUsers';
             tmp.header = [
                 {name:'邀请者类型',from:'invite.type',filter:'radio/user_type'},
                 {name:'邀请者ID',from:'invite._id'},
                 {name:'邀请者编号',from:'invite.userNumber'},
                 {name:'邀请者姓名',from:'invite.name'},
                 {name:'邀请者手机',from:'invite.phone'},
-                {name:'奖励详情',from:'invitedUsers',filter:'detail/invite',isArray:true}
+                {name:'被邀请人ID',from:'invitedUsers._id'},
+                {name:'被邀请人类型',from:'invitedUsers.type',filter:'radio/user_type'},
+                {name:'被邀请人编号',from:'invitedUsers.userNumber'},
+                {name:'被邀请人手机',from:'invitedUsers.phone'},
+                {name:'被邀请人姓名',from:'invitedUsers.name'},
+                {name:'完成订单数量',from:'invitedUsers.finishOrderCount'},
+                {name:'是否已领取',from:'invitedUsers.isRewardGet',filter:'bool'},
             ];
             break;
             case 'course_teacher':
@@ -49,23 +61,28 @@ var SectionReward = Vue.extend({
             break;
             case 'course_parent':
             api = '/reward/course/parent';
+            key = 'finishCourseTime';
             tmp.header = [
                 {name:'家长ID',from:'user._id'},
                 {name:'家长编号',from:'user.userNumber'},
                 {name:'家长姓名',from:'user.name'},
                 {name:'家长手机',from:'user.phone'},
-                {name:'完成课程时间',from:'user.parentMessage.finishCourseTime',filter:'min'},
-                {name:'奖励详情',from:'finishCourseTime',filter:'detail/course_parent',isArray:true}
+                {name:'总时间',from:'user.parentMessage.finishCourseTime',filter:'min'},
+                {name:'完成课时时间',from:'finishCourseTime.time',filter:'min'},
+                {name:'积分发放数量',from:'finishCourseTime.score'},
+                {name:'现金券发放金额',from:'finishCourseTime.money',filter:'money'},
+                {name:'能否领取',from:'finishCourseTime.canGet',filter:'bool'},
+                {name:'是否已领取',from:'finishCourseTime.hasGet',filter:'bool'},
             ];
             break;
         }
         
-        this.reload(api);
+        this.reload(api,key);
         return tmp;
     },
     methods: {
-        reload: function(api) {
-            Store.commonGet(api+'?',this,true);
+        reload: function(api,key) {
+            Store.commonGet(api+'?',this,true,key);
         }
     },
     template: '<ol class="breadcrumb"><li>任务奖励</li></ol>'+
