@@ -6,30 +6,43 @@ var UpdateTeachPrice = Vue.extend({
             form: [],
             teacher_id: this.obj._id
         };
+
         for (var i = 0; i != tp.length; i++) {
-            var addPrice = tp[i].addPrice===undefined?0:tp[i].addPrice;
+            var addPrice = [tp[i].addPrice===0?'':(tp[i].addPrice/100).toFixed(2)];
             tmp.form.push({
-                price: ((tp[i].price+addPrice)/100).toFixed(2) + '元',
+                price: (tp[i].price/100).toFixed(2),
+                addPrice: addPrice,
                 name: tp[i].course+' '+tp[i].grade,
                 id: tp[i]._id,
                 vm: '',
             });
         }
+        this.patch = new Array(tp.length);
+
         return tmp;
     },
-    template:'<ol class="breadcrumb"><li>家教ID：{{teacher_id}}</li></ol>'+
-    "<form onSubmit=\"return false;\">\n"+
-                "<div class=\"form-group\" v-for=\"item in form\">\n"+
-                    "<label>{{item.name + ' ' + item.price}}</label><br>\n"+
-                    "<input type=\"text\" v-model=\"item.vm\">"+
-                    "<button v-on:click=\"submit(item)\">修改</button>\n"+
-               "</div>\n"+                   
-            "</form>",
+    template:'<div class=\"modal-dialog\">'+
+                    '<div class=\"modal-content\">'+
+                        '<div class=\"modal-header\">'+                      
+                            '<button type=\"button\" class="close" v-on:click=\"exit()\"><span aria-hidden=\"true\">&times;</span></button>'+ 
+                            '<h4>详情</h4>'+
+                        '</div>'+
+                        '<div class=\"modal-body\">'+
+                            '<ol class="breadcrumb"><li>家教ID：{{teacher_id}}</li></ol>'+
+                                "<form class=\"form-inline\" v-for=\"item in form\" onSubmit=\"return false;\">\n"+
+                                    "<label>{{item.name + ' ' + item.price + item.addPrice + ' 元'}}</label><br>\n"+
+                                    "<input class=\"form-control\" type=\"text\" v-model=\"item.vm\">"+
+                                    "<button class=\"btn btn-default\" v-on:click=\"submit($index,item)\">修改</button>\n"+
+                               "</form>\n"+
+                         '</div>'+
+                    '</div>'+
+                '</div>',
     methods:{
-        reset: function() {
-            
+        exit: function() {
+            Store.modal.closeFn(this.patch);
+            Store.closeModal();
         },
-        submit: function(item) {
+        submit: function($index,item) {
             var new_price = item.vm;
             if (new_price === '' || isNaN(new_price)) {
                 return;
@@ -43,8 +56,9 @@ var UpdateTeachPrice = Vue.extend({
             
             submitObj._id = item.id;
             submitObj.price = parseInt(new_price*100);
-            submitObj.token=Store.token;
+            submitObj.token = Store.token;
 
+            var self = this;
             $.ajax({
                 url: Store.rootUrl+'/CoursePrice',
                 dataType: 'json',
@@ -53,7 +67,9 @@ var UpdateTeachPrice = Vue.extend({
                 contentType: "application/json; charset=utf-8"
             }).done(function(data, status, jqXHR){
                 if(data.result=='success'){
-                    item.price = parseFloat(new_price).toFixed(2) + '元';
+                    item.price = (submitObj.price/100).toFixed(2);
+
+                    self.patch[$index] = submitObj.price;
                 }else{
                     alert('执行失败！');
                 }

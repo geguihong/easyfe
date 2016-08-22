@@ -8,20 +8,20 @@ var Store = {
     modal: {
         close: true,
         view: '',
-        obj: null,
-        closeFn: null
+        obj: undefined,
+        closeFn: undefined
     },
     showModal: function(text,obj,fn) {
         this.modal.close = false;
         this.modal.view = text;
         this.modal.obj = obj;
-        this.modal.closeFn = (fn === undefined)?null:fn;
+        this.modal.closeFn = fn;
     },
-    closeModal: function() {
+    closeModal: function(result) {
         this.modal.close = true;
         this.modal.view = '';
-        this.modal.obj = null;
-        this.modal.closeFn = null;
+        this.modal.obj = undefined;
+        this.modal.closeFn = undefined;
     },
 
     // 数据预处理
@@ -225,8 +225,9 @@ var Store = {
             case 'teachPrice':
             var new_str = [];
             for (var i = 0;i != str.length;i++) {
-                var addPrice = str[i].addPrice===undefined?0:str[i].addPrice;
-                new_str.push(str[i].course+' '+str[i].grade+' '+((str[i].price+addPrice)/100).toFixed(2)+'元');
+                var originalPrice = (str[i].price/100).toFixed(2); 
+                var addPrice = str[i].addPrice===0?'':'(+'+((str[i].addPrice)/100).toFixed(2)+')';
+                new_str.push(str[i].course+' '+str[i].grade+' '+originalPrice+addPrice+' 元');
             }
             return new_str.join(';');
 
@@ -516,16 +517,38 @@ var ActionRow = Vue.extend({
         emit: function(event){
             switch(event.tag) {
                 case '修改推广单价':
-                Store.showModal('update-order',this.preData);
+                Store.showModal('update-order',this.preData,function(patch) {
+                    if (patch !== undefined) {
+                        this.preData.price = patch;
+                    }
+                    this.postData = this.getArray(this.preData);
+                }.bind(this));
                 break;
                 case '修改活动':
-                Store.showModal('update-vip-event',this.preData);
+                Store.showModal('update-vip-event',this.preData,function(patch) {
+                    for (var key in patch) {
+                        this.preData[key] = patch[key];
+                    }
+                    this.postData = this.getArray(this.preData);
+                }.bind(this));
                 break;
                 case '修改专业辅导内容':
-                Store.showModal('update-report',this.preData);
+                Store.showModal('update-report',this.preData,function(patch) {
+                    for (var key in patch) {
+                        this.preData.thisTeachDetail[key] = patch[key];
+                    }
+                    this.postData = this.getArray(this.preData);
+                }.bind(this));
                 break;
                 case '修改授课单价':
-                Store.showModal('update-teach-price',this.preData);
+                Store.showModal('update-teach-price',this.preData,function(patch) {
+                    for (var i=0;i!==patch.length;i++) {
+                        if (patch[i] !== undefined) {
+                            this.preData.teachPrice[i].price = patch[i];
+                        }
+                    }
+                    this.postData = this.getArray(this.preData);
+                }.bind(this));
                 break;
                 case '钱包':
                 Store.showModal('wallet',this.preData);
@@ -568,177 +591,13 @@ var ActionRow = Vue.extend({
     }
 });
 Vue.component('action-row', ActionRow);
-//BookMark:脏检查表单
-var DirtyForm = Vue.extend({
-    props:['form','api','qnToken','isTmp','noWrapper'],
-    data:function() {
-        var tmp = {models:[],submitLock:false};
-        for(var i=0;i!=this.form.length;i++){
-            if (this.form[i].filter === 'array') {
-                var model = {
-                    oldArr: this.form[i].default,
-                    newArr: [],
-                };
-                for(var j=0;j!==model.oldArr.length;j++) {
-                    model.newArr.push(model.oldArr[j]);
-                }
-                tmp.models.push(model);
-            } else {
-                tmp.models.push(this.form[i].default);
-            }
-        }
-        return tmp;
-    },
-    template:"<form onSubmit=\"return false;\">\n"+
-                "<div class=\"form-group\" v-for=\"(key1,item) in form\">\n"+
-                    "<label>{{item.name}}</label><span v-if=\"item.filter!=='array'\" :class=\"{hidden:(models[key1]===item.default)}\">*</span>\n"+
-                    "<template v-if=\"item.filter==='uid'\">\n"+
-                        "<p>{{models[key1]}}</p>\n"+
-                    "</template>\n"+
-                    "<template v-if=\"item.filter==='bool'\">\n"+
-                        "<br><label class=\"radio-inline\"><input v-model=\"models[key1]\" type=\"radio\" :value=\"true\" />是</label><label class=\"radio-inline\"><input v-model=\"models[key1]\" type=\"radio\" :value=\"false\" />否</label>"+
-                    "</template>\n"+
-                    "<template v-if=\"item.filter==='radio/teach_way'\">\n"+
-                        "<br><label class=\"radio-inline\"><input v-model=\"models[key1]\" type=\"radio\" :value=\"1\" />针对性知识点补习</label><label class=\"radio-inline\"><input v-model=\"models[key1]\" type=\"radio\" :value=\"2\" />复习模拟卷</label>"+
-                    "</template>\n"+
-                    "<template v-if=\"item.filter==='textarea'\">\n"+
-                        "<textarea class=\"form-control\" rows=\"3\" v-model=\"models[key1]\"></textarea>\n"+
-                    "</template>\n"+
-                    "<template v-if=\"item.filter==='img'\">\n"+
-                        "<br><img :src=\"models[key1]\" alt=\"暂无图片\">\n"+
-                        "<input type=\"file\" v-on:change=\"upload($event,key1)\"/>\n"+
-                    "</template>\n"+
-                    "<template v-if=\"item.filter==='array'\">\n"+
-                        "<div v-for=\"(key2,value) in models[key1].newArr\" track-by=\"$index\">{{key2 + 1}}：<input type=\"text\" v-model=\"models[key1].newArr[key2]\"/></div>\n"+
-                    "</template>\n"+
-                    "<template v-if=\"item.filter===undefined\">\n"+
-                        "<br><input class=\"form-control\" type=\"text\" v-model=\"models[key1]\"/>\n"+
-                    "</template>\n"+
-               "</div>\n"+                   
-                "<safe-lock text=\"解锁修改按钮\"><button class=\"btn btn-default\" v-on:click=\"submit\" :disabled=\"submitLock\">修改</button>\n"+
-                "<span>（只改动带*号的数据）</span></safe-lock>\n"+
-            "</form>",
-    methods:{
-        upload: function(e,index) {
-            var self = this;
-            var file = e.target.files[0];
-            var supportedTypes = ['image/jpg', 'image/jpeg', 'image/png'];
-            if (file && supportedTypes.indexOf(file.type) >= 0) {
-                var oMyForm = new FormData();
-                oMyForm.append("token", self.qnToken);
-                oMyForm.append("file", file);
-                oMyForm.append("key", Date.parse(new Date()));
-
-                var xhr = new XMLHttpRequest();
-                xhr.open("POST", "http://upload.qiniu.com/");
-                xhr.onreadystatechange = function(response) {
-                    if (xhr.readyState == 4 && xhr.status == 200 && xhr.responseText != "") {
-                        var blkRet = JSON.parse(xhr.responseText);
-                        console && console.log(blkRet);
-                        self.models.$set(index,'http://7xrvd4.com1.z0.glb.clouddn.com/'+blkRet.key);
-                    } else if (xhr.status != 200 && xhr.responseText) {
-                        console && console.log('上传失败');
-                    }
-                };
-                xhr.send(oMyForm);
-            } else {
-                alert('文件格式只支持：jpg、jpeg 和 png');
-            }
-        },
-        submit: function() {
-            var tmp={};
-            var data={};
-            var modified = false;
-            for(var i=0;i!=this.form.length;i++){
-                if(this.form[i].filter === 'uid') {
-                    data = Store.setter(data,this.form[i].from,this.models[i]);
-                    continue;
-                }
-
-                if(this.form[i].filter === 'array') {
-                    var arrayModified = false;
-                    for (var j=0;j!==this.models[i].newArr.length;j++) {
-                        if (this.models[i].newArr[j] !== this.models[i].oldArr[j]) {
-                            arrayModified = true;
-                            break;
-                        }
-                    }
-
-                    if(arrayModified) {
-                        data = Store.setter(data,this.form[i].from,this.models[i].newArr);
-                        modified = true;
-                    }
-                    continue;
-                }
-
-                if(this.form[i].default !== this.models[i]) {
-                    var post;
-                    switch(this.form[i].submitFilter) {
-                        case 'number/100':
-                        post = parseInt(this.models[i]*100);
-                        break;
-                        default:
-                        post = this.models[i];
-                    }
-                    data = Store.setter(data,this.form[i].from,post);
-                    modified = true;
-                }
-            }
-            tmp.token = Store.token;
-            tmp.data = data;
-            
-            if (!modified) {
-                return;
-            }
-            
-            console.log(tmp);
-            var self = this;
-            $.ajax({
-                url: Store.rootUrl+self.api,
-                dataType: 'json',
-                data:JSON.stringify(tmp),
-                type:'POST',
-                contentType: "application/json; charset=utf-8"
-            }).done(function(data, status, jqXHR){
-                if(data.result=='success'){
-                    alert('修改成功');
-                    if (!self.isTmp) {
-                        location.reload();
-                    }
-                }else{
-                    alert('修改失败');
-                }
-                self.submitLock = false;
-            }).fail(function(data, status, jqXHR){
-               alert('服务器请求超时');
-               self.submitLock = false;
-            });
-        }
-    }
-})
-Vue.component('dirty-form',DirtyForm);
 //BookMark:模态框
 var Modal = Vue.extend({
     data: function() {
         return Store.modal;
     },
-    methods: {
-        exit: function() {
-            Store.closeModal();
-        }
-    },
     template:'<div class="window" v-if=\"!close\">'+
-                 '<div class=\"modal-dialog\">'+
-                    '<div class=\"modal-content\">'+
-                        '<div class=\"modal-header\">'+                      
-                            '<button type=\"button\" class="close" v-on:click=\"exit()\"><span aria-hidden=\"true\">&times;</span></button>'+ 
-                            '<h4>详情</h4>'+
-                        '</div>'+
-                        '<div class=\"modal-body\">'+
-                            '<component v-if="view.length > 0" :is="view" :obj="obj"></component>'+
-                         '</div>'+
-                    '</div>'+
-                '</div>'+
+                '<component v-if="view.length > 0" :is="view" :obj="obj"></component>'+
             '</div>',
 });
 Vue.component('modal', Modal);
@@ -1097,19 +956,35 @@ var SideBar = Vue.extend({
 })
 Vue.component('side-bar', SideBar);
 var Detail = Vue.extend({
+	methods:{
+        exit: function() {
+            Store.closeModal();
+        }
+    },
     props: ['obj'],
-    template: '<div v-for=\"item in obj\" class=\"bundle\" track-by=\"$index\">'+   
+    template: '<div class=\"modal-dialog\">'+
+                    '<div class=\"modal-content\">'+
+                        '<div class=\"modal-header\">'+                      
+                            '<button type=\"button\" class="close" v-on:click=\"exit()\"><span aria-hidden=\"true\">&times;</span></button>'+ 
+                            '<h4>详情</h4>'+
+                        '</div>'+
+                        '<div class=\"modal-body\">'+
+    						'<div v-for=\"item in obj\" class=\"bundle\" track-by=\"$index\">'+   
                                 '<p class=\"left\"><strong>{{item.name}}</strong></p>'+    
                                 '<p class=\"right\" v-if=\"item.type===\'text\'\" >{{item.content}}</p>'+
                                 '<img class=\"right\" v-if=\"item.type===\'img\'\" :src=\"item.content\" />'+
                                 '<div class=\"right\" v-if=\"item.type===\'array\'\"><p v-for=\"second_item in item.content\">{{second_item}}</p></div>'+
-                            '</div>'
+                            '</div>'+
+                        '</div>'+
+                    '</div>'+
+                '</div>'
 })
 
 Vue.component('detail',Detail);
 var UpdateOrder = Vue.extend({
     props: ['obj'],
     data: function() {
+        this.patch = undefined;
         return {
             price: this.processPrice(this.obj.price),
             vm: {
@@ -1118,6 +993,10 @@ var UpdateOrder = Vue.extend({
         };
     },
     methods: {
+        exit: function() {
+            Store.modal.closeFn(this.patch);
+            Store.closeModal();
+        },
         processPrice: function(num) {
             return (num/100).toFixed(2);
         },
@@ -1146,6 +1025,7 @@ var UpdateOrder = Vue.extend({
             }).done(function(data, status, jqXHR){
                 if(data.result=='success'){
                     self.price = self.processPrice(tmp.price);
+                    self.patch = tmp.price;
                 }else{
                     alert('修改失败');
                 }
@@ -1156,28 +1036,170 @@ var UpdateOrder = Vue.extend({
             });
         }
     },
-    template: '<ol class="breadcrumb"><li>修改推广单价</li></ol>'+
-                '<p>特价推广单价</p><p>{{price}} 元</p><div><input type="text" v-model="vm.price"><button v-on:click="submit()">修改</button></div>',
+    template: '<div class=\"modal-dialog\">'+
+                    '<div class=\"modal-content\">'+
+                        '<div class=\"modal-header\">'+                      
+                            '<button type=\"button\" class="close" v-on:click=\"exit()\"><span aria-hidden=\"true\">&times;</span></button>'+ 
+                            '<h4>详情</h4>'+
+                        '</div>'+
+                        '<div class=\"modal-body\">'+
+                            '<ol class="breadcrumb"><li>修改推广单价</li></ol>'+
+                            '<p>特价推广单价</p><p>{{price}} 元</p><form class="form-inline">'+
+                                '<input type="text" v-model="vm.price"><button v-on:click="submit()">修改</button>'+
+                            '</form>'+
+                        '</div>'+
+                    '</div>'+
+                '</div>'
 })
 Vue.component('update-order',UpdateOrder);
 var UpdateReport = Vue.extend({
     props: ['obj'],
-    data: function() {
-        return {
-            form: [
-                 {name:'订单ID',from:'orderId',default:this.obj._id,filter:'uid'},
-                 {name:'教学类型',from:'thisTeachDetail.teachWay',default:this.obj.thisTeachDetail.teachWay,filter:'radio/teach_way'},
-                 {name:'难易程度',from:'thisTeachDetail.easyLevel',default:this.obj.thisTeachDetail.easyLevel},
-                 {name:'专业辅导科目',from:'thisTeachDetail.course',default:this.obj.thisTeachDetail.course},
-                 {name:'专业辅导年级',from:'thisTeachDetail.grade',default:this.obj.thisTeachDetail.grade},
-                 {name:'阶段',from:'thisTeachDetail.category',default:this.obj.thisTeachDetail.category},
-                 {name:'复习模拟卷类型',from:'thisTeachDetail.examPaper',default:this.obj.thisTeachDetail.examPaper},
-                 {name:'知识点',from:'thisTeachDetail.knowledge',default:this.obj.thisTeachDetail.knowledge,filter:'array'}
-                ]
+    methods: {
+        exit: function() {
+            Store.modal.closeFn(this.patch);
+            Store.closeModal();
+        },
+        diff: function(val,header) {
+            function equals(a,b) {
+                if (a.length !== b.length) {
+                    return false;
+                } else {
+                    for(var i=0,l=a.length;i<l;i++)
+                        if(b[i]!==a[i]) 
+                            return false;
+                }
+                return true;
+            }
+
+            if (header.filter === 'array') {
+                return equals(header.default,val);
+            } else {
+                return header.default === val;
+            }
+        },
+        submit: function() {
+            var tmp={};
+            var data={};
+            var patch_add = {};
+            var modified = false;
+
+            for(var i=0;i!=this.form.length;i++){
+                if(this.form[i].filter === 'uid') {
+                    data = Store.setter(data,this.form[i].from,this.models[i]);
+                    continue;
+                }
+
+                if(!this.diff(this.models[i],this.form[i])) {
+                    data = Store.setter(data,this.form[i].from,this.models[i]);
+                    modified = true;
+                    patch_add[this.form[i].patch_key]=this.models[i];
+                }
+            }
+            
+            tmp.token = Store.token;
+            tmp.data = data;
+            
+            if (!modified) {
+                return;
+            }
+            
+            var self = this;
+            $.ajax({
+                url: Store.rootUrl+'/Update/Order/Report/ThisTeachDetail',
+                dataType: 'json',
+                data:JSON.stringify(tmp),
+                type:'POST',
+                contentType: "application/json; charset=utf-8"
+            }).done(function(data, status, jqXHR){
+                if(data.result=='success'){
+                    alert('修改成功');
+                    $.extend(self.patch,patch_add);
+                    console.log(self.patch);
+                }else{
+                    alert('修改失败');
+                }
+                self.submitLock = false;
+            }).fail(function(data, status, jqXHR){
+               alert('服务器请求超时');
+               self.submitLock = false;
+            });
         }
     },
-    template: '<ol class="breadcrumb"><li>修改这次反馈报告</li></ol>'+
-                '<div><dirty-form :form="form" api="/Update/Order/Report/ThisTeachDetail" :is-tmp="true" :no-wrapper="true"></dirty-form></div>',
+    data: function() {
+        this.patch = {};
+        
+        tmp = {
+            form: [
+                 {name:'订单ID',from:'orderId',default:this.obj._id,filter:'uid'},
+                 {name:'教学类型',patch_key:'teachWay',from:'thisTeachDetail.teachWay',default:this.obj.thisTeachDetail.teachWay,filter:'radio/teach_way'},
+                 {name:'难易程度',patch_key:'easyLevel',from:'thisTeachDetail.easyLevel',default:this.obj.thisTeachDetail.easyLevel},
+                 {name:'专业辅导科目',patch_key:'course',from:'thisTeachDetail.course',default:this.obj.thisTeachDetail.course},
+                 {name:'专业辅导年级',patch_key:'grade',from:'thisTeachDetail.grade',default:this.obj.thisTeachDetail.grade},
+                 {name:'阶段',patch_key:'category',from:'thisTeachDetail.category',default:this.obj.thisTeachDetail.category},
+                 {name:'复习模拟卷类型',patch_key:'examPaper',from:'thisTeachDetail.examPaper',default:this.obj.thisTeachDetail.examPaper},
+                 {name:'知识点',patch_key:'knowledge',from:'thisTeachDetail.knowledge',default:this.obj.thisTeachDetail.knowledge,filter:'array'}
+                ],
+            models: [],
+            submitLock: false
+        };
+
+        // 一些属性值可能为 undefined
+        for(var i=0;i!=tmp.form.length;i++) {
+            if (tmp.form[i].filter === 'array') {
+                tmp.form[i].default = (tmp.form[i].default!==undefined&&tmp.form[i].default.length !== 0)?tmp.form[i].default:['','','','','','','','',''];
+            } else {
+                tmp.form[i].default = tmp.form[i].default!==undefined?tmp.form[i].default:'';
+            }
+        }
+
+        // model 是 default 的克隆
+        function clone(arr) {
+            var b=[]; 
+            for(var i=0,l=arr.length;i<l;i++){
+                b.push(arr[i]);
+            }
+            return b;
+        }
+
+        for(var i=0;i!=tmp.form.length;i++){
+            if (tmp.form[i].filter === 'array')
+                tmp.models.push(clone(tmp.form[i].default));
+            else
+                tmp.models.push(tmp.form[i].default);
+        }
+
+        return tmp;
+    },
+    template:'<div class=\"modal-dialog\">'+
+                    '<div class=\"modal-content\">'+
+                        '<div class=\"modal-header\">'+                      
+                            '<button type=\"button\" class="close" v-on:click=\"exit()\"><span aria-hidden=\"true\">&times;</span></button>'+ 
+                            '<h4>详情</h4>'+
+                        '</div>'+
+                        '<div class=\"modal-body\">'+
+                            '<ol class="breadcrumb"><li>修改本次反馈报告</li></ol>'+
+                            "<form onSubmit=\"return false;\">\n"+
+                                "<div class=\"form-group\" v-for=\"(key1,item) in form\">\n"+
+                                    "<label>{{item.name}}</label><span :class=\"{hidden:diff(models[key1],item)}\">*</span>\n"+
+                                    "<template v-if=\"item.filter==='uid'\">\n"+
+                                        "<p>{{models[key1]}}</p>\n"+
+                                    "</template>\n"+
+                                    "<template v-if=\"item.filter==='radio/teach_way'\">\n"+
+                                        "<br><label class=\"radio-inline\"><input v-model=\"models[key1]\" type=\"radio\" :value=\"1\" />针对性知识点补习</label><label class=\"radio-inline\"><input v-model=\"models[key1]\" type=\"radio\" :value=\"2\" />复习模拟卷</label>"+
+                                    "</template>\n"+
+                                    "<template v-if=\"item.filter==='array'\">\n"+
+                                        "<div v-for=\"(key2,value) in models[key1]\" track-by=\"$index\">{{key2 + 1}}：<input type=\"text\" v-model=\"models[key1][key2]\"/></div>\n"+
+                                    "</template>\n"+
+                                    "<template v-if=\"item.filter===undefined\">\n"+
+                                        "<br><input class=\"form-control\" type=\"text\" v-model=\"models[key1]\"/>\n"+
+                                    "</template>\n"+
+                               "</div>\n"+                   
+                                "<safe-lock text=\"解锁修改按钮\"><button class=\"btn btn-default\" v-on:click=\"submit\" :disabled=\"submitLock\">修改</button>\n"+
+                                "<span>（只改动带*号的数据）</span></safe-lock>\n"+
+                            "</form>"+
+                        '</div>'+
+                    '</div>'+
+                '</div>'
 })
 Vue.component('update-report',UpdateReport);
 var UpdateTeachPrice = Vue.extend({
@@ -1188,30 +1210,43 @@ var UpdateTeachPrice = Vue.extend({
             form: [],
             teacher_id: this.obj._id
         };
+
         for (var i = 0; i != tp.length; i++) {
-            var addPrice = tp[i].addPrice===undefined?0:tp[i].addPrice;
+            var addPrice = [tp[i].addPrice===0?'':(tp[i].addPrice/100).toFixed(2)];
             tmp.form.push({
-                price: ((tp[i].price+addPrice)/100).toFixed(2) + '元',
+                price: (tp[i].price/100).toFixed(2),
+                addPrice: addPrice,
                 name: tp[i].course+' '+tp[i].grade,
                 id: tp[i]._id,
                 vm: '',
             });
         }
+        this.patch = new Array(tp.length);
+
         return tmp;
     },
-    template:'<ol class="breadcrumb"><li>家教ID：{{teacher_id}}</li></ol>'+
-    "<form onSubmit=\"return false;\">\n"+
-                "<div class=\"form-group\" v-for=\"item in form\">\n"+
-                    "<label>{{item.name + ' ' + item.price}}</label><br>\n"+
-                    "<input type=\"text\" v-model=\"item.vm\">"+
-                    "<button v-on:click=\"submit(item)\">修改</button>\n"+
-               "</div>\n"+                   
-            "</form>",
+    template:'<div class=\"modal-dialog\">'+
+                    '<div class=\"modal-content\">'+
+                        '<div class=\"modal-header\">'+                      
+                            '<button type=\"button\" class="close" v-on:click=\"exit()\"><span aria-hidden=\"true\">&times;</span></button>'+ 
+                            '<h4>详情</h4>'+
+                        '</div>'+
+                        '<div class=\"modal-body\">'+
+                            '<ol class="breadcrumb"><li>家教ID：{{teacher_id}}</li></ol>'+
+                                "<form class=\"form-inline\" v-for=\"item in form\" onSubmit=\"return false;\">\n"+
+                                    "<label>{{item.name + ' ' + item.price + item.addPrice + ' 元'}}</label><br>\n"+
+                                    "<input class=\"form-control\" type=\"text\" v-model=\"item.vm\">"+
+                                    "<button class=\"btn btn-default\" v-on:click=\"submit($index,item)\">修改</button>\n"+
+                               "</form>\n"+
+                         '</div>'+
+                    '</div>'+
+                '</div>',
     methods:{
-        reset: function() {
-            
+        exit: function() {
+            Store.modal.closeFn(this.patch);
+            Store.closeModal();
         },
-        submit: function(item) {
+        submit: function($index,item) {
             var new_price = item.vm;
             if (new_price === '' || isNaN(new_price)) {
                 return;
@@ -1225,8 +1260,9 @@ var UpdateTeachPrice = Vue.extend({
             
             submitObj._id = item.id;
             submitObj.price = parseInt(new_price*100);
-            submitObj.token=Store.token;
+            submitObj.token = Store.token;
 
+            var self = this;
             $.ajax({
                 url: Store.rootUrl+'/CoursePrice',
                 dataType: 'json',
@@ -1235,7 +1271,9 @@ var UpdateTeachPrice = Vue.extend({
                 contentType: "application/json; charset=utf-8"
             }).done(function(data, status, jqXHR){
                 if(data.result=='success'){
-                    item.price = parseFloat(new_price).toFixed(2) + '元';
+                    item.price = (submitObj.price/100).toFixed(2);
+
+                    self.patch[$index] = submitObj.price;
                 }else{
                     alert('执行失败！');
                 }
@@ -1248,21 +1286,122 @@ var UpdateTeachPrice = Vue.extend({
 Vue.component('update-teach-price',UpdateTeachPrice);
 var UpdateVipEvent = Vue.extend({
     props: ['obj'],
-    data: function() {
-        return {
-            form: [
-                {name:'活动ID',from:'vipEventId',default:this.obj._id,filter:'uid'},
-                {name:'活动标题',from:'title',default:this.obj.title},
-                {name:'活动说明',from:'detail',default:this.obj.detail},
-                {name:'积分预订',from:'score',default:this.obj.score.toString()},
-                {name:'现金预订',from:'money',default:(this.obj.money/100).toFixed(2),submitFilter:'number/100'},
-                {name:'最大人数',from:'allowCount',default:this.obj.allowCount.toString()},
-                {name:'是否接受预订',from:'isPublish',default:this.obj.isPublish,filter:'bool'},
-                ]
+    methods: {
+        exit: function() {
+            Store.modal.closeFn(this.patch);
+            Store.closeModal();
+        },
+        submit: function() {
+            var tmp={};
+            var data={};
+            var patch_add = {};
+            var modified = false;
+
+            for(var i=0;i!=this.form.length;i++){
+                if(this.form[i].filter === 'uid') {
+                    data = Store.setter(data,this.form[i].from,this.models[i]);
+                    continue;
+                }
+
+                if(this.form[i].default !== this.models[i]) {
+                    // 对金额进行预处理
+                    var tval;
+                    if (this.form[i].filter === 'money') {
+                        if (isNaN(this.models[i])) {
+                            return;
+                        } else {
+                            tval = parseInt(this.models[i]*100);
+                        }
+                    } else {
+                        tval = this.models[i];
+                    }
+
+                    data = Store.setter(data,this.form[i].from,tval);
+                    modified = true;
+                    patch_add[this.form[i].patch_key]=tval;
+                }
+            }
+            
+            tmp.token = Store.token;
+            tmp.data = data;
+            
+            if (!modified) {
+                return;
+            }
+            
+            var self = this;
+            $.ajax({
+                url: Store.rootUrl+'/VipEvent/Update',
+                dataType: 'json',
+                data:JSON.stringify(tmp),
+                type:'POST',
+                contentType: "application/json; charset=utf-8"
+            }).done(function(data, status, jqXHR){
+                if(data.result=='success'){
+                    alert('修改成功');
+                    $.extend(self.patch,patch_add);
+                    console.log(self.patch);
+                }else{
+                    alert('修改失败');
+                }
+                self.submitLock = false;
+            }).fail(function(data, status, jqXHR){
+               alert('服务器请求超时');
+               self.submitLock = false;
+            });
         }
     },
-    template: '<ol class="breadcrumb"><li>修改会员活动</li></ol>'+
-                '<div><dirty-form :form="form" api="/VipEvent/Update" :is-tmp="true"></dirty-form></div>',
+    data: function() {
+        this.patch = {};
+
+        var tmp = {
+            form: [
+                {name:'活动ID',from:'vipEventId',default:this.obj._id,filter:'uid'},
+                {name:'活动标题',patch_key:'title',from:'title',default:this.obj.title},
+                {name:'活动说明',patch_key:'detail',from:'detail',default:this.obj.detail},
+                {name:'积分预订',patch_key:'score',from:'score',default:this.obj.score.toString()},
+                {name:'现金预订',patch_key:'money',from:'money',default:(this.obj.money/100).toFixed(2),filter:'money'},
+                {name:'最大人数',patch_key:'allowCount',from:'allowCount',default:this.obj.allowCount.toString()},
+                {name:'是否接受预订',patch_key:'isPublish',from:'isPublish',default:this.obj.isPublish,filter:'bool'},
+                ],
+            models: [],
+            submitLock: false
+        }
+
+        for(var i=0;i!=tmp.form.length;i++){
+            tmp.models.push(tmp.form[i].default);
+        }
+
+        return tmp;
+    },
+
+    template: '<div class=\"modal-dialog\">'+
+                    '<div class=\"modal-content\">'+
+                        '<div class=\"modal-header\">'+                      
+                            '<button type=\"button\" class="close" v-on:click=\"exit()\"><span aria-hidden=\"true\">&times;</span></button>'+ 
+                            '<h4>详情</h4>'+
+                        '</div>'+
+                        '<div class=\"modal-body\">'+
+                            '<ol class="breadcrumb"><li>修改会员活动</li></ol>'+
+                            "<form onSubmit=\"return false;\">\n"+
+                                "<div class=\"form-group\" v-for=\"(key1,item) in form\">\n"+
+                                    "<label>{{item.name}}</label><span v-if=\"item.filter!=='array'\" :class=\"{hidden:(models[key1]===item.default)}\">*</span>\n"+
+                                    "<template v-if=\"item.filter==='uid'\">\n"+
+                                        "<p>{{models[key1]}}</p>\n"+
+                                    "</template>\n"+
+                                    "<template v-if=\"item.filter==='bool'\">\n"+
+                                        "<br><label class=\"radio-inline\"><input v-model=\"models[key1]\" type=\"radio\" :value=\"true\" />是</label><label class=\"radio-inline\"><input v-model=\"models[key1]\" type=\"radio\" :value=\"false\" />否</label>"+
+                                    "</template>\n"+
+                                    "<template v-if=\"item.filter===undefined||item.filter==='money'\">\n"+
+                                        "<br><input class=\"form-control\" type=\"text\" v-model=\"models[key1]\"/>\n"+
+                                    "</template>\n"+
+                                "</div>\n"+                   
+                                "<safe-lock text=\"解锁修改按钮\"><button class=\"btn btn-default\" v-on:click=\"submit\" :disabled=\"submitLock\">修改</button>\n"+
+                                "<span>（只改动带*号的数据）</span></safe-lock>\n"+
+                            "</form>"+
+                        '</div>'+
+                    '</div>'+
+                '</div>'
 })
 Vue.component('update-vip-event',UpdateVipEvent);
 
@@ -1300,6 +1439,9 @@ var Wallet = Vue.extend({
         return tmp;
     },
     methods: {
+        exit: function() {
+            Store.closeModal();
+        },
         toggle() {
             this.modify = !this.modify;
         },
@@ -1367,14 +1509,34 @@ var Wallet = Vue.extend({
             });
         },
     },
-    template: '<ol class="breadcrumb"><li>钱包信息</li></ol>'+
-                '<p><strong>余额</strong></p><p>{{balance}}</p>'+
-                '<p><strong>已提现金额</strong></p><p>{{haveWithdraw}}</p>'+
-                '<p><strong>正在提现金额</strong></p><p>{{withdrawing}}</p>'+
-                '<a v-on:click="toggle()">开启修改</a>'+
-                '<p><strong>支付宝账户</strong></p><p>{{ali}}</p><div v-if="modify"><input type="text" v-model="vm[0]"><button v-on:click="submit(0)">修改</button></div>'+
-                '<p><strong>微信支付账户</strong></p><p>{{wechat}}</p><div v-if="modify"><input type="text" v-model="vm[1]"><button v-on:click="submit(1)">修改</button></div>'+
-                '<p><strong>银行账户</strong></p><p>银行：{{bankName}}</p><div v-if="modify"><input type="text" v-model="vm[2]"><button v-on:click="submit(2)">修改</button></div><p>卡号：{{bankAccount}}</p><div v-if="modify"><input type="text" v-model="vm[3]"><button v-on:click="submit(3)">修改</button></div>',
+    template: '<div class=\"modal-dialog\">'+
+                    '<div class=\"modal-content\">'+
+                        '<div class=\"modal-header\">'+                      
+                            '<button type=\"button\" class="close" v-on:click=\"exit()\"><span aria-hidden=\"true\">&times;</span></button>'+ 
+                            '<h4>详情</h4>'+
+                        '</div>'+
+                        '<div class=\"modal-body\">'+
+                            '<ol class="breadcrumb"><li>钱包信息</li></ol>'+
+                                '<p><strong>余额</strong></p><p>{{balance}}</p>'+
+                                '<p><strong>已提现金额</strong></p><p>{{haveWithdraw}}</p>'+
+                                '<p><strong>正在提现金额</strong></p><p>{{withdrawing}}</p>'+
+                                '<a v-on:click="toggle()">开启修改</a>'+
+                                '<p><strong>支付宝账户</strong></p><p>{{ali}}</p><form class="form-inline" v-if="modify"><input class="form-control" type="text" v-model="vm[0]"><button class="btn btn-default" v-on:click="submit(0)">修改</button></form>'+
+                                '<p><strong>微信支付账户</strong></p><p>{{wechat}}</p><form class="form-inline" v-if="modify"><input class="form-control" type="text" v-model="vm[1]"><button class="btn btn-default" v-on:click="submit(1)">修改</button></form>'+
+                                '<p><strong>银行账户</strong></p>'+
+                                '<p>银行：{{bankName}}</p>'+
+                                '<form class="form-inline" v-if="modify">'+
+                                    '<input class="form-control" type="text" v-model="vm[2]">'+
+                                    '<button class="btn btn-default" v-on:click="submit(2)">修改</button>'+
+                                '</form>'+
+                                '<p>卡号：{{bankAccount}}</p>'+
+                                '<form class="form-inline" v-if="modify">'+
+                                    '<input class="form-control" type="text" v-model="vm[3]">'+
+                                    '<button class="btn btn-default" v-on:click="submit(3)">修改</button>'+
+                                '</form>'+
+                            '</div>'+
+                        '</div>'+
+                    '</div>',
 })
 
 Vue.component('wallet',Wallet);
@@ -1440,9 +1602,8 @@ var SectionAdvertise = Vue.extend({
             dataType: 'json'
         }).done(function(data, status, jqXHR){
             if(data.result=="success"){
-                for(var i=0;i!=self.form.length;i++){
-                    self.form[i].default = Store.getter(data.data,self.form[i].from);
-                }
+                self.link = data.data.advertise.link;
+                self.image = data.data.advertise.image;
                 self.qnToken = data.data.qnToken;
                 self.loaded = true;
             }else{
@@ -1454,15 +1615,78 @@ var SectionAdvertise = Vue.extend({
         });
         
         return {
-            form: [
-                {name:'广告预览图',from:'advertise.image',filter:'img'},
-                {name:'副标题',from:'advertise.link'},
-                ],
+            link: '',
+            image: '',
             loaded: false,
         }
     },
+    methods: {
+        upload: function(e) {
+            var self = this;
+            var file = e.target.files[0];
+            var supportedTypes = ['image/jpg', 'image/jpeg', 'image/png'];
+            if (file && supportedTypes.indexOf(file.type) >= 0) {
+                var oMyForm = new FormData();
+                oMyForm.append("token", this.qnToken);
+                oMyForm.append("file", file);
+                oMyForm.append("key", Date.parse(new Date()));
+
+                var xhr = new XMLHttpRequest();
+                xhr.open("POST", "http://upload.qiniu.com/");
+                xhr.onreadystatechange = function(response) {
+                    if (xhr.readyState == 4 && xhr.status == 200 && xhr.responseText != "") {
+                        var blkRet = JSON.parse(xhr.responseText);
+                        console && console.log(blkRet);
+                        self.image = 'http://7xrvd4.com1.z0.glb.clouddn.com/'+blkRet.key;
+                    } else if (xhr.status != 200 && xhr.responseText) {
+                        console && console.log('上传失败');
+                    }
+                };
+                xhr.send(oMyForm);
+            } else {
+                alert('文件格式只支持：jpg、jpeg 和 png');
+            }
+        },
+        submit: function() {
+            var tmp = {
+                token: Store.token,
+                data: {
+                    advertise: {
+                        image: this.image,
+                        link: this.link
+                    }
+                }
+            };
+            
+            var self = this;
+            $.ajax({
+                url: Store.rootUrl+'/OnlineParams',
+                dataType: 'json',
+                data:JSON.stringify(tmp),
+                type:'POST',
+                contentType: "application/json; charset=utf-8"
+            }).done(function(data, status, jqXHR){
+                if(data.result=='success'){
+                    alert('修改成功');
+                }else{
+                    alert('修改失败');
+                }
+            }).fail(function(data, status, jqXHR){
+               alert('服务器请求超时');
+            });
+        }
+    },
     template: '<ol class="breadcrumb"><li>在线参数</li><li>修改首页广告</li></ol>'+
-                '<div><dirty-form v-if="loaded" :form="form" api="/OnlineParams" :qn-token="qnToken"></dirty-form></div>',
+                    "<div v-if=\"loaded\">\n"+
+                            "<p><strong>预览图</strong></p>\n"+
+                            "<img :src=\"image\" alt=\"暂无图片\">\n"+
+                            "<input type=\"file\" v-on:change=\"upload($event)\"/>\n"+
+                            "<p><strong>广告链接</strong></p>\n"+
+                            "<input class=\"form-control\" type=\"text\" v-model=\"link\" />\n"+
+                    "</div>\n"+
+                    "<div class=\"creater\">\n"+
+                        "<safe-lock text=\"解锁修改按钮\"><button class=\"btn btn-default\" v-on:click=\"submit()\">提交变更</button></safe-lock>\n"+
+                    "</div>",
 })
 
 //route:allUser
@@ -1480,37 +1704,6 @@ var SectionAllUser = Vue.extend({
         return tmp;
     },
     template: '<ol class="breadcrumb"><li>用户管理</li><li>所有用户信息</li></ol>'+
-                '<div><pagination-table v-if="loaded" :list="list" :header="header" :actions="actions"></pagination-table></div>'
-})
-//route:Book
-var SectionVipEventBook = Vue.extend({
-    data: function() { 
-        var tmp={};
-        tmp.loaded = false;
-        tmp.header = [
-                {name:'活动ID',from:'vipEvent._id'},
-                {name:'活动编号',from:'vipEvent.vipEventNumber'},
-                {name:'活动标题',from:'vipEvent.title'},
-                {name:'预约ID',from:'_id'},
-                {name:'用户类型',from:'user.type',filter:'radio/user_type'},
-                {name:'用户ID',from:'user._id'},
-                {name:'用户编号',from:'user.userNumber'},
-                {name:'用户姓名',from:'user.name'},
-                {name:'用户手机',from:'user.phone'},
-                {name:'下单时间',from:'updated_at',filter:'date'},
-                {name:'支付类型',from:'payType',filter:'radio/pay_type'},
-                {name:'支付额度',from:'COMPUTED/EVENTBOOKPAY'},
-        ];
-        this.actions = [];
-        this.reload();
-        return tmp;
-    },
-    methods: {
-        reload: function() {
-            Store.commonGet('/VipEvent/Book?',this,true);
-        }
-    },
-    template: '<ol class="breadcrumb"><li>会员活动</li><li>会员活动预订情况</li></ol>'+
                 '<div><pagination-table v-if="loaded" :list="list" :header="header" :actions="actions"></pagination-table></div>'
 })
 //route:CreateEvent
@@ -1553,16 +1746,52 @@ var SectionCreateEvent = Vue.extend({
                     '</div>',
     methods: {
         submit: function () {
-            this.submitLock = true;
+            if (this.submitLock) {
+                return;
+            }
+
+            function trim(str){
+　　          return str.replace(/(^\s*)|(\s*$)/g, "");
+　　        }
+
             tmp={};
-            tmp.title = this.title;
-            tmp.detail = this.detail;
+            // 标题
+            tmp.title = trim(this.title);
+            if (tmp.title.length === 0) {
+                alert('标题不能为空');
+                return;
+            }
+
+            // 说明
+            tmp.detail = trim(this.detail);
+            if (tmp.detail.length === 0) {
+                alert('说明不能为空');
+                return;
+            }
+
+            if (!/^[1-9][0-9]*$/.test(this.score)) {
+                alert('积分只能为整数');
+                return;
+            }
             tmp.score = this.score;
+
+            if (trim(this.money).length===0||isNaN(this.money)) {
+                alert('金额格式错误');
+                return;
+            }
             tmp.money = parseInt(this.money * 100);
+
+            if (!/^[1-9][0-9]*$/.test(this.allowCount)) {
+                alert('人数上限只能为整数');
+                return;
+            }
             tmp.allowCount = this.allowCount;
-            tmp.isPublish = this.isPublish === '1' ?true:false;
+
+            // 是否接受预订
+            tmp.isPublish = this.isPublish;
 
             tmp.token = Store.token;
+            this.submitLock = true;
             
             var self = this;
             $.ajax({
@@ -1723,6 +1952,45 @@ var SectionGuideMap = Vue.extend({
 })
 //route:onlineParams
 var SectionOnlineParams = Vue.extend({
+    methods: {
+        submit: function() {
+            var tmp={};
+            var data={};
+            var modified = false;
+
+            for(var i=0;i!=this.form.length;i++){
+                if(this.form[i].default !== this.models[i]) {
+                    data = Store.setter(data,this.form[i].from,this.models[i]);
+                    modified = true;
+                }
+            }
+            tmp.token = Store.token;
+            tmp.data = data;
+            
+            if (!modified) {
+                return;
+            }
+            
+            var self = this;
+            $.ajax({
+                url: Store.rootUrl+'/OnlineParams',
+                dataType: 'json',
+                data:JSON.stringify(tmp),
+                type:'POST',
+                contentType: "application/json; charset=utf-8"
+            }).done(function(data, status, jqXHR){
+                if(data.result=='success'){
+                    alert('修改成功');
+                }else{
+                    alert('修改失败');
+                }
+                self.submitLock = false;
+            }).fail(function(data, status, jqXHR){
+               alert('服务器请求超时');
+               self.submitLock = false;
+            });
+        }
+    },
     data: function() {
         var self = this;
         $.ajax({
@@ -1732,6 +2000,7 @@ var SectionOnlineParams = Vue.extend({
             if(data.result=="success"){
                 for(var i=0;i!=self.form.length;i++){
                     self.form[i].default = Store.getter(data.data,self.form[i].from);
+                    self.models.push(self.form[i].default);
                 }
                 self.loaded = true;
             }else{
@@ -1742,7 +2011,8 @@ var SectionOnlineParams = Vue.extend({
             alert('服务器请求超时');
         });
         
-        return {
+        var tmp = {
+            api: '',
             form: [
                 {name:'标题',from:'specialText.line1'},
                 {name:'副标题',from:'specialText.line2'},
@@ -1751,10 +2021,26 @@ var SectionOnlineParams = Vue.extend({
                 {name:'侧边栏底部文字',from:'sidebarBottomText',filter:'textarea'}
                 ],
             loaded: false,
-        }
+            submitLock: false,
+            models: []
+        };
+
+        return tmp;
     },
     template: '<ol class="breadcrumb"><li>在线参数</li><li>修改在线参数</li></ol>'+
-                '<div><dirty-form v-if="loaded" :form="form" api="/OnlineParams"></dirty-form></div>',
+                "<form onSubmit=\"return false;\">\n"+
+                "<div class=\"form-group\" v-for=\"(key1,item) in form\">\n"+
+                    "<label>{{item.name}}</label><span v-if=\"item.filter!=='array'\" :class=\"{hidden:(models[key1]===item.default)}\">*</span>\n"+
+                    "<template v-if=\"item.filter===undefined\">\n"+
+                        "<br><input class=\"form-control\" type=\"text\" v-model=\"models[key1]\"/>\n"+
+                    "</template>\n"+
+                    "<template v-if=\"item.filter==='textarea'\">\n"+
+                        "<textarea class=\"form-control\" rows=\"3\" v-model=\"models[key1]\"></textarea>\n"+
+                    "</template>\n"+
+               "</div>\n"+                   
+                "<safe-lock text=\"解锁修改按钮\"><button class=\"btn btn-default\" v-on:click=\"submit\" :disabled=\"submitLock\">修改</button>\n"+
+                "<span>（只改动带*号的数据）</span></safe-lock>\n"+
+            "</form>",
 })
 //route:order
 var SectionOrder = Vue.extend({
@@ -2122,11 +2408,25 @@ var SectionSendMessage = Vue.extend({
     template: "<ol class=\"breadcrumb\"><li>消息中心</li><li>发送消息</li></ol>\n                <div>\n                    <form onSubmit=\"return false;\">\n                        <div class=\"form-group\">\n                            <label>发送内容</label><textarea class=\"form-control\" rows=\"3\" v-model=\"content\"></textarea>\n                        </div>\n                        <div class=\"form-group\">\n                            <label>发送对象</label><br />\n                            <label class=\"radio-inline\"><input v-model=\"type\" type=\"radio\" value=\"1\" />家教</label>\n                            <label class=\"radio-inline\"><input v-model=\"type\" type=\"radio\" value=\"2\" />家长</label>\n                            <label class=\"radio-inline\"><input v-model=\"type\" type=\"radio\" value=\"3\" />全部</label>\n                        </div>\n                        <safe-lock text=\"解锁发送按钮\"><button class=\"btn btn-default\" v-on:click=\"submit\" :disabled=\"submitLock\">提交消息</button></safe-lock>\n                    </form>\n                </div>",
     methods: {
         submit: function () {
-            this.submitLock = true;
+            if (this.submitLock) {
+                return;
+            }
+
+            function trim(str){
+　　          return str.replace(/(^\s*)|(\s*$)/g, "");
+　　        }
+
             tmp={};
-            tmp.content = this.content;
+            tmp.content = trim(this.content);
             tmp.type = this.type;
             tmp.token = Store.token;
+
+            if (tmp.content.length === 0) {
+                alert('内容不能为空');
+                return;
+            }
+
+            this.submitLock = true;
             
             var self = this;
             $.ajax({
@@ -2218,6 +2518,37 @@ var SectionVipEvent = Vue.extend({
         }
     },
     template: '<ol class="breadcrumb"><li>会员活动</li><li>会员活动发布情况</li></ol>'+
+                '<div><pagination-table v-if="loaded" :list="list" :header="header" :actions="actions"></pagination-table></div>'
+})
+//route:Book
+var SectionVipEventBook = Vue.extend({
+    data: function() { 
+        var tmp={};
+        tmp.loaded = false;
+        tmp.header = [
+                {name:'活动ID',from:'vipEvent._id'},
+                {name:'活动编号',from:'vipEvent.vipEventNumber'},
+                {name:'活动标题',from:'vipEvent.title'},
+                {name:'预约ID',from:'_id'},
+                {name:'用户类型',from:'user.type',filter:'radio/user_type'},
+                {name:'用户ID',from:'user._id'},
+                {name:'用户编号',from:'user.userNumber'},
+                {name:'用户姓名',from:'user.name'},
+                {name:'用户手机',from:'user.phone'},
+                {name:'下单时间',from:'updated_at',filter:'date'},
+                {name:'支付类型',from:'payType',filter:'radio/pay_type'},
+                {name:'支付额度',from:'COMPUTED/EVENTBOOKPAY'},
+        ];
+        this.actions = [];
+        this.reload();
+        return tmp;
+    },
+    methods: {
+        reload: function() {
+            Store.commonGet('/VipEvent/Book?',this,true);
+        }
+    },
+    template: '<ol class="breadcrumb"><li>会员活动</li><li>会员活动预订情况</li></ol>'+
                 '<div><pagination-table v-if="loaded" :list="list" :header="header" :actions="actions"></pagination-table></div>'
 })
 //route:WithDraw

@@ -102,16 +102,38 @@ var ActionRow = Vue.extend({
         emit: function(event){
             switch(event.tag) {
                 case '修改推广单价':
-                Store.showModal('update-order',this.preData);
+                Store.showModal('update-order',this.preData,function(patch) {
+                    if (patch !== undefined) {
+                        this.preData.price = patch;
+                    }
+                    this.postData = this.getArray(this.preData);
+                }.bind(this));
                 break;
                 case '修改活动':
-                Store.showModal('update-vip-event',this.preData);
+                Store.showModal('update-vip-event',this.preData,function(patch) {
+                    for (var key in patch) {
+                        this.preData[key] = patch[key];
+                    }
+                    this.postData = this.getArray(this.preData);
+                }.bind(this));
                 break;
                 case '修改专业辅导内容':
-                Store.showModal('update-report',this.preData);
+                Store.showModal('update-report',this.preData,function(patch) {
+                    for (var key in patch) {
+                        this.preData.thisTeachDetail[key] = patch[key];
+                    }
+                    this.postData = this.getArray(this.preData);
+                }.bind(this));
                 break;
                 case '修改授课单价':
-                Store.showModal('update-teach-price',this.preData);
+                Store.showModal('update-teach-price',this.preData,function(patch) {
+                    for (var i=0;i!==patch.length;i++) {
+                        if (patch[i] !== undefined) {
+                            this.preData.teachPrice[i].price = patch[i];
+                        }
+                    }
+                    this.postData = this.getArray(this.preData);
+                }.bind(this));
                 break;
                 case '钱包':
                 Store.showModal('wallet',this.preData);

@@ -38,16 +38,52 @@ var SectionCreateEvent = Vue.extend({
                     '</div>',
     methods: {
         submit: function () {
-            this.submitLock = true;
+            if (this.submitLock) {
+                return;
+            }
+
+            function trim(str){
+　　          return str.replace(/(^\s*)|(\s*$)/g, "");
+　　        }
+
             tmp={};
-            tmp.title = this.title;
-            tmp.detail = this.detail;
+            // 标题
+            tmp.title = trim(this.title);
+            if (tmp.title.length === 0) {
+                alert('标题不能为空');
+                return;
+            }
+
+            // 说明
+            tmp.detail = trim(this.detail);
+            if (tmp.detail.length === 0) {
+                alert('说明不能为空');
+                return;
+            }
+
+            if (!/^[1-9][0-9]*$/.test(this.score)) {
+                alert('积分只能为整数');
+                return;
+            }
             tmp.score = this.score;
+
+            if (trim(this.money).length===0||isNaN(this.money)) {
+                alert('金额格式错误');
+                return;
+            }
             tmp.money = parseInt(this.money * 100);
+
+            if (!/^[1-9][0-9]*$/.test(this.allowCount)) {
+                alert('人数上限只能为整数');
+                return;
+            }
             tmp.allowCount = this.allowCount;
-            tmp.isPublish = this.isPublish === '1' ?true:false;
+
+            // 是否接受预订
+            tmp.isPublish = this.isPublish;
 
             tmp.token = Store.token;
+            this.submitLock = true;
             
             var self = this;
             $.ajax({

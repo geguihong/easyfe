@@ -32,6 +32,9 @@ var Wallet = Vue.extend({
         return tmp;
     },
     methods: {
+        exit: function() {
+            Store.closeModal();
+        },
         toggle() {
             this.modify = !this.modify;
         },
@@ -99,14 +102,34 @@ var Wallet = Vue.extend({
             });
         },
     },
-    template: '<ol class="breadcrumb"><li>钱包信息</li></ol>'+
-                '<p><strong>余额</strong></p><p>{{balance}}</p>'+
-                '<p><strong>已提现金额</strong></p><p>{{haveWithdraw}}</p>'+
-                '<p><strong>正在提现金额</strong></p><p>{{withdrawing}}</p>'+
-                '<a v-on:click="toggle()">开启修改</a>'+
-                '<p><strong>支付宝账户</strong></p><p>{{ali}}</p><div v-if="modify"><input type="text" v-model="vm[0]"><button v-on:click="submit(0)">修改</button></div>'+
-                '<p><strong>微信支付账户</strong></p><p>{{wechat}}</p><div v-if="modify"><input type="text" v-model="vm[1]"><button v-on:click="submit(1)">修改</button></div>'+
-                '<p><strong>银行账户</strong></p><p>银行：{{bankName}}</p><div v-if="modify"><input type="text" v-model="vm[2]"><button v-on:click="submit(2)">修改</button></div><p>卡号：{{bankAccount}}</p><div v-if="modify"><input type="text" v-model="vm[3]"><button v-on:click="submit(3)">修改</button></div>',
+    template: '<div class=\"modal-dialog\">'+
+                    '<div class=\"modal-content\">'+
+                        '<div class=\"modal-header\">'+                      
+                            '<button type=\"button\" class="close" v-on:click=\"exit()\"><span aria-hidden=\"true\">&times;</span></button>'+ 
+                            '<h4>详情</h4>'+
+                        '</div>'+
+                        '<div class=\"modal-body\">'+
+                            '<ol class="breadcrumb"><li>钱包信息</li></ol>'+
+                                '<p><strong>余额</strong></p><p>{{balance}}</p>'+
+                                '<p><strong>已提现金额</strong></p><p>{{haveWithdraw}}</p>'+
+                                '<p><strong>正在提现金额</strong></p><p>{{withdrawing}}</p>'+
+                                '<a v-on:click="toggle()">开启修改</a>'+
+                                '<p><strong>支付宝账户</strong></p><p>{{ali}}</p><form class="form-inline" v-if="modify"><input class="form-control" type="text" v-model="vm[0]"><button class="btn btn-default" v-on:click="submit(0)">修改</button></form>'+
+                                '<p><strong>微信支付账户</strong></p><p>{{wechat}}</p><form class="form-inline" v-if="modify"><input class="form-control" type="text" v-model="vm[1]"><button class="btn btn-default" v-on:click="submit(1)">修改</button></form>'+
+                                '<p><strong>银行账户</strong></p>'+
+                                '<p>银行：{{bankName}}</p>'+
+                                '<form class="form-inline" v-if="modify">'+
+                                    '<input class="form-control" type="text" v-model="vm[2]">'+
+                                    '<button class="btn btn-default" v-on:click="submit(2)">修改</button>'+
+                                '</form>'+
+                                '<p>卡号：{{bankAccount}}</p>'+
+                                '<form class="form-inline" v-if="modify">'+
+                                    '<input class="form-control" type="text" v-model="vm[3]">'+
+                                    '<button class="btn btn-default" v-on:click="submit(3)">修改</button>'+
+                                '</form>'+
+                            '</div>'+
+                        '</div>'+
+                    '</div>',
 })
 
 Vue.component('wallet',Wallet);

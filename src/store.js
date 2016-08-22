@@ -8,20 +8,20 @@ var Store = {
     modal: {
         close: true,
         view: '',
-        obj: null,
-        closeFn: null
+        obj: undefined,
+        closeFn: undefined
     },
     showModal: function(text,obj,fn) {
         this.modal.close = false;
         this.modal.view = text;
         this.modal.obj = obj;
-        this.modal.closeFn = (fn === undefined)?null:fn;
+        this.modal.closeFn = fn;
     },
-    closeModal: function() {
+    closeModal: function(result) {
         this.modal.close = true;
         this.modal.view = '';
-        this.modal.obj = null;
-        this.modal.closeFn = null;
+        this.modal.obj = undefined;
+        this.modal.closeFn = undefined;
     },
 
     // 数据预处理
@@ -225,8 +225,9 @@ var Store = {
             case 'teachPrice':
             var new_str = [];
             for (var i = 0;i != str.length;i++) {
-                var addPrice = str[i].addPrice===undefined?0:str[i].addPrice;
-                new_str.push(str[i].course+' '+str[i].grade+' '+((str[i].price+addPrice)/100).toFixed(2)+'元');
+                var originalPrice = (str[i].price/100).toFixed(2); 
+                var addPrice = str[i].addPrice===0?'':'(+'+((str[i].addPrice)/100).toFixed(2)+')';
+                new_str.push(str[i].course+' '+str[i].grade+' '+originalPrice+addPrice+' 元');
             }
             return new_str.join(';');
 

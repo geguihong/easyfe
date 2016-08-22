@@ -10,11 +10,25 @@ var SectionSendMessage = Vue.extend({
     template: "<ol class=\"breadcrumb\"><li>消息中心</li><li>发送消息</li></ol>\n                <div>\n                    <form onSubmit=\"return false;\">\n                        <div class=\"form-group\">\n                            <label>发送内容</label><textarea class=\"form-control\" rows=\"3\" v-model=\"content\"></textarea>\n                        </div>\n                        <div class=\"form-group\">\n                            <label>发送对象</label><br />\n                            <label class=\"radio-inline\"><input v-model=\"type\" type=\"radio\" value=\"1\" />家教</label>\n                            <label class=\"radio-inline\"><input v-model=\"type\" type=\"radio\" value=\"2\" />家长</label>\n                            <label class=\"radio-inline\"><input v-model=\"type\" type=\"radio\" value=\"3\" />全部</label>\n                        </div>\n                        <safe-lock text=\"解锁发送按钮\"><button class=\"btn btn-default\" v-on:click=\"submit\" :disabled=\"submitLock\">提交消息</button></safe-lock>\n                    </form>\n                </div>",
     methods: {
         submit: function () {
-            this.submitLock = true;
+            if (this.submitLock) {
+                return;
+            }
+
+            function trim(str){
+　　          return str.replace(/(^\s*)|(\s*$)/g, "");
+　　        }
+
             tmp={};
-            tmp.content = this.content;
+            tmp.content = trim(this.content);
             tmp.type = this.type;
             tmp.token = Store.token;
+
+            if (tmp.content.length === 0) {
+                alert('内容不能为空');
+                return;
+            }
+
+            this.submitLock = true;
             
             var self = this;
             $.ajax({
