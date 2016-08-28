@@ -63,6 +63,10 @@ var SectionReport = Vue.extend({
         ];
         
         tmp.subtitle = ['未处理报告','已处理报告'][this.$route.params['type_id']];
+        if (tmp.subtitle === '未处理报告') {
+            tmp.actions.unshift({type:'normal',tag:'修改专业辅导内容'});
+        }
+
         this.reload(this.$route.params['type_id']);
         return tmp;
     },

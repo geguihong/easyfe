@@ -2125,7 +2125,6 @@ var SectionOrder = Vue.extend({
             case 'n2':
             url = '/Order?state=1';
             tmp.subtitle = '待执行订单';
-            tmp.actions.push({type:'normal',tag:'修改专业辅导内容'});
             break;
             
             case 'n3':
@@ -2312,6 +2311,10 @@ var SectionReport = Vue.extend({
         ];
         
         tmp.subtitle = ['未处理报告','已处理报告'][this.$route.params['type_id']];
+        if (tmp.subtitle === '未处理报告') {
+            tmp.actions.unshift({type:'normal',tag:'修改专业辅导内容'});
+        }
+
         this.reload(this.$route.params['type_id']);
         return tmp;
     },

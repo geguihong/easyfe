@@ -81,7 +81,6 @@ var SectionOrder = Vue.extend({
             case 'n2':
             url = '/Order?state=1';
             tmp.subtitle = '待执行订单';
-            tmp.actions.push({type:'normal',tag:'修改专业辅导内容'});
             break;
             
             case 'n3':
