@@ -1,3 +1,11 @@
+function clone(arr) {
+    var b=[]; 
+    for(var i=0,l=arr.length;i<l;i++){
+        b.push(arr[i]);
+    }
+    return b;
+}
+
 var Store = {
     // api 相关
     rootUrl: '/Web', 

@@ -29,6 +29,10 @@ var SectionOnlineParams = Vue.extend({
             }).done(function(data, status, jqXHR){
                 if(data.result=='success'){
                     alert('修改成功');
+                    // 重置默认值
+                    for (var i=0;i!==self.form.length;i++) {
+                        self.form[i].default = self.models[i];
+                    }
                 }else{
                     alert('修改失败');
                 }
@@ -46,7 +50,7 @@ var SectionOnlineParams = Vue.extend({
             dataType: 'json'
         }).done(function(data, status, jqXHR){
             if(data.result=="success"){
-                for(var i=0;i!=self.form.length;i++){
+                for(var i=0;i!==self.form.length;i++){
                     self.form[i].default = Store.getter(data.data,self.form[i].from);
                     self.models.push(self.form[i].default);
                 }
@@ -62,11 +66,11 @@ var SectionOnlineParams = Vue.extend({
         var tmp = {
             api: '',
             form: [
-                {name:'标题',from:'specialText.line1'},
-                {name:'副标题',from:'specialText.line2'},
-                {name:'正文',from:'specialText.line3'},
-                {name:'底部文字',from:'specialText.bottomText'},
-                {name:'侧边栏底部文字',from:'sidebarBottomText',filter:'textarea'}
+                {name:'标题',from:'specialText.line1',default:''},
+                {name:'副标题',from:'specialText.line2',default:''},
+                {name:'正文',from:'specialText.line3',default:''},
+                {name:'底部文字',from:'specialText.bottomText',default:''},
+                {name:'侧边栏底部文字',from:'sidebarBottomText',filter:'textarea',default:''}
                 ],
             loaded: false,
             submitLock: false,
@@ -78,7 +82,7 @@ var SectionOnlineParams = Vue.extend({
     template: '<ol class="breadcrumb"><li>在线参数</li><li>修改在线参数</li></ol>'+
                 "<form onSubmit=\"return false;\">\n"+
                 "<div class=\"form-group\" v-for=\"(key1,item) in form\">\n"+
-                    "<label>{{item.name}}</label><span v-if=\"item.filter!=='array'\" :class=\"{hidden:(models[key1]===item.default)}\">*</span>\n"+
+                    "<label>{{item.name}}</label><span :class=\"{hidden:(models[key1]===item.default)}\">*</span>\n"+
                     "<template v-if=\"item.filter===undefined\">\n"+
                         "<br><input class=\"form-control\" type=\"text\" v-model=\"models[key1]\"/>\n"+
                     "</template>\n"+

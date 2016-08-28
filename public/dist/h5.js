@@ -60,7 +60,7 @@ $('#invite-button').click(function(){
                 window.location.href = '/invite_teacher_success.html';
             }
         }else{
-            alert('邀请失败！');
+            alert(data.message);
         }
     }).fail(function(data, status, jqXHR){
         alert('请求失败！');

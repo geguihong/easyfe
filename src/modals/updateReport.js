@@ -60,7 +60,14 @@ var UpdateReport = Vue.extend({
                 if(data.result=='success'){
                     alert('修改成功');
                     $.extend(self.patch,patch_add);
-                    console.log(self.patch);
+                    // 重置默认值
+                    for (var i=0;i!==self.form.length;i++) {
+                        if (self.form[i].filter === 'array') {
+                            self.form[i].default = clone(self.models[i]);
+                        } else {
+                            self.form[i].default = self.models[i];
+                        }
+                    }
                 }else{
                     alert('修改失败');
                 }
@@ -96,15 +103,6 @@ var UpdateReport = Vue.extend({
             } else {
                 tmp.form[i].default = tmp.form[i].default!==undefined?tmp.form[i].default:'';
             }
-        }
-
-        // model 是 default 的克隆
-        function clone(arr) {
-            var b=[]; 
-            for(var i=0,l=arr.length;i<l;i++){
-                b.push(arr[i]);
-            }
-            return b;
         }
 
         for(var i=0;i!=tmp.form.length;i++){
