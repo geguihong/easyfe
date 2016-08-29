@@ -202,7 +202,7 @@ var Store = {
 
             case 'professionalTutorPrice':
             if (str === -1) {
-                return '无';
+                return '0.00';
             } else {
                 return (str/100).toFixed(2);
             }
@@ -341,6 +341,7 @@ var Store = {
     userHeader:[[
             {name:'用户ID',from:'_id'},
             {name:'用户编号',from:'userNumber'},
+            {name:'是否冻结',from:'canUse',filter:'bool/reverse'},
             {name:'姓名',from:'name'},
             {name:'性别',from:'gender',filter:'radio/gender'},
             {name:'生日',from:'birthday',filter:'onlydate'},
@@ -471,7 +472,7 @@ var ActionRow = Vue.extend({
                 '<td style="max-width:none;overflow:visible;" class="dropup">'+
                     '<template v-for="action in actions">'+
                         '<button v-if="action.type===\'normal\'&&hidden!==$index" v-on:click="emit(action)" class="btn btn-primary" style="margin-right:10px;">{{action.tag}}</button>'+
-                        '<div style="display:inline-block;" class="input-group-btn" v-if="action.type===\'toggle\'">'+
+                        '<div style="display:inline-block;width:auto;margin-right: 10px;" class="input-group-btn" v-if="action.type===\'toggle\'">'+
                             '<button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown">{{action.map[pre(action.related)]}}<span class="caret"></span></button>'+
                                 '<ul class="dropdown-menu">'+
                                     '<li v-for="(index,item) in action.arr" v-on:click="select(action,index)" track-by="$index"><a>{{item.tag}}</a></li>'+
@@ -498,6 +499,12 @@ var ActionRow = Vue.extend({
             };
             var api;
             switch(action.module) {
+                case 'user':
+                api = '/blacklist';
+                tmp['userId'] = this.preData._id;
+                tmp['canUse'] = newVal;
+                break;
+
                 case 'teacher':
                 api = '/Teacher/Check';
                 tmp['teacherId'] = this.preData._id;
@@ -1732,7 +1739,11 @@ var SectionAllUser = Vue.extend({
         tmp.header = Store.userHeader[0].concat(Store.userHeader[1]).concat(Store.userHeader[2]);
         tmp.actions = [
             {type:'normal',tag:'查看'},
-            {type:'normal',tag:'钱包'}
+            {type:'normal',tag:'钱包'},
+            {type:'toggle',map:{true:'正常',false:'冻结'},
+                arr:[{tag:'正常',val:true},{tag:'冻结',val:false}],
+                related:'canUse',
+                module:'user'}
         ];
         
         Store.commonGet('/User?type=0',this,false);

@@ -202,7 +202,7 @@ var Store = {
 
             case 'professionalTutorPrice':
             if (str === -1) {
-                return '无';
+                return '0.00';
             } else {
                 return (str/100).toFixed(2);
             }
@@ -341,6 +341,7 @@ var Store = {
     userHeader:[[
             {name:'用户ID',from:'_id'},
             {name:'用户编号',from:'userNumber'},
+            {name:'是否冻结',from:'canUse',filter:'bool/reverse'},
             {name:'姓名',from:'name'},
             {name:'性别',from:'gender',filter:'radio/gender'},
             {name:'生日',from:'birthday',filter:'onlydate'},

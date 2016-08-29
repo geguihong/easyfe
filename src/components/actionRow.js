@@ -25,7 +25,7 @@ var ActionRow = Vue.extend({
                 '<td style="max-width:none;overflow:visible;" class="dropup">'+
                     '<template v-for="action in actions">'+
                         '<button v-if="action.type===\'normal\'&&hidden!==$index" v-on:click="emit(action)" class="btn btn-primary" style="margin-right:10px;">{{action.tag}}</button>'+
-                        '<div style="display:inline-block;" class="input-group-btn" v-if="action.type===\'toggle\'">'+
+                        '<div style="display:inline-block;width:auto;margin-right: 10px;" class="input-group-btn" v-if="action.type===\'toggle\'">'+
                             '<button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown">{{action.map[pre(action.related)]}}<span class="caret"></span></button>'+
                                 '<ul class="dropdown-menu">'+
                                     '<li v-for="(index,item) in action.arr" v-on:click="select(action,index)" track-by="$index"><a>{{item.tag}}</a></li>'+
@@ -52,6 +52,12 @@ var ActionRow = Vue.extend({
             };
             var api;
             switch(action.module) {
+                case 'user':
+                api = '/blacklist';
+                tmp['userId'] = this.preData._id;
+                tmp['canUse'] = newVal;
+                break;
+
                 case 'teacher':
                 api = '/Teacher/Check';
                 tmp['teacherId'] = this.preData._id;
