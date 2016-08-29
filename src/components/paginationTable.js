@@ -1,6 +1,6 @@
 //Bookmark:分页表
 var PaginationTable = Vue.extend({
-    props:['list','header','actions'],
+    props:['list','header','actions','fileName'],
     data:function() {
         this.datas = [];
         for(var i=0;i!==this.list.length;i++) {
@@ -58,7 +58,11 @@ var PaginationTable = Vue.extend({
             for (var i = 0; i < arrData.length; i++) {
                 var row = "";
                 for (var index=0;index!==arrData[i].length;index++) {
-                    row += '"'+ arrData[i][index] + '",';
+                    if (header[index].stopAuto) {
+                        row += '"\''+ arrData[i][index] + '",';
+                    } else {
+                        row += '"'+ arrData[i][index] + '",';
+                    }
                 }
                 row = row.slice(0, row.length - 1);
                 CSV += row + '\r\n';
@@ -70,7 +74,7 @@ var PaginationTable = Vue.extend({
             }   
             
             //文件名
-            var fileName = "表格";
+            var fileName = this.fileName;
 
             //初始化文件
             var uri = 'data:text/csv;charset=gb2312,' + $URL.encode(CSV);

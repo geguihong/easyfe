@@ -14,7 +14,7 @@ var SectionPaylist = Vue.extend({
                 {name:'付款人ID',from:'user._id'},
                 {name:'付款人编号',from:'user.userNumber'},
                 {name:'付款人姓名',from:'user.name'},
-                {name:'付款人手机',from:'user.phone'},
+                {name:'付款人手机',from:'user.phone',stopAuto:true},
                 {name:'付款金额',from:'COMPUTED/PAYMONEY-TEACHER',filter:'money'},
                 {name:'付款时间',from:'updated_at',filter:'date'},
                 {name:'会员活动编号',from:'vipEvent.vipEventNumber'},
@@ -22,11 +22,11 @@ var SectionPaylist = Vue.extend({
                 {name:'家长ID',from:'order.parent._id'},
                 {name:'家长编号',from:'order.parent.userNumber'},
                 {name:'家长姓名',from:'order.parent.name'},
-                {name:'家长手机',from:'order.parent.phone'},
+                {name:'家长手机',from:'order.parent.phone',stopAuto:true},
                 {name:'家教ID',from:'order.teacher._id'},
                 {name:'家教编号',from:'order.teacher.userNumber'},
                 {name:'家教姓名',from:'order.teacher.name'},
-                {name:'家教手机',from:'order.teacher.phone'},
+                {name:'家教手机',from:'order.teacher.phone',stopAuto:true},
                 {name:'订单完成时间（学生完成反馈）',from:'order.reportTime',filter:'date'},
                 {name:'单位价格',from:'order.price',filter:'money'},
                 {name:'交通补贴',from:'order.subsidy',filter:'money'},
@@ -50,5 +50,5 @@ var SectionPaylist = Vue.extend({
         }
     },
     template: '<ol class="breadcrumb"><li>消息中心</li><li>{{subtitle}}</li></ol>'+
-                '<div><pagination-table v-if="loaded" :list="list" :header="header" :actions="actions"></pagination-table></div>'
+                '<div><pagination-table v-if="loaded" :list="list" :header="header" :actions="actions" :file-name="subtitle"></pagination-table></div>'
 })

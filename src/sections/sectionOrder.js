@@ -10,11 +10,11 @@ var SectionOrder = Vue.extend({
             {name:'家长ID',from:'parent._id'},
             {name:'家长编号',from:'parent.userNumber'},
             {name:'家长姓名',from:'parent.name'},
-            {name:'家长手机',from:'parent.phone'},
+            {name:'家长手机',from:'parent.phone',stopAuto:true},
             {name:'家教ID',from:'teacher._id'},
             {name:'家教编号',from:'teacher.userNumber'},
             {name:'家教姓名',from:'teacher.name'},
-            {name:'家教手机',from:'teacher.phone'},
+            {name:'家教手机',from:'teacher.phone',stopAuto:true},
             {name:'年级',from:'grade'},
             {name:'课程',from:'course'},
             {name:'授课日期',from:'teachTime.date'},
@@ -129,5 +129,5 @@ var SectionOrder = Vue.extend({
     },
     template: '<ol class="breadcrumb"><li>{{maintitle}}</li><li>{{subtitle}}</li></ol>'+
                 '<order-static></order-static>'+
-                '<div><pagination-table v-if="loaded" :list="list" :header="header" :actions="actions"></pagination-table></div>'
+                '<div><pagination-table v-if="loaded" :list="list" :header="header" :actions="actions" :file-name="subtitle"></pagination-table></div>'
 })

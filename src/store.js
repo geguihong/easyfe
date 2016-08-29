@@ -189,17 +189,6 @@ var Store = {
     },
     filter: function(str,type) {
         switch(type) {
-            case 'detail/course_parent':
-            var new_str = [];
-            for (var i = 0;i != str.length;i++) {
-                var tmp_money = (str[i].money/100).toFixed(2)+' 元';
-                var tmp_bool1 = str[i].canGet?'是':'否';
-                var tmp_bool2 = str[i].hasGet?'是':'否';
-                new_str.push('完成课时时间：'+str[i].time+' 分钟 | 积分发放数量：'+str[i].score+' | 现金券发放金额：'+tmp_money
-                    +' | 能否领取：'+tmp_bool1+' | 是否已领取：'+tmp_bool2);
-            }
-            return new_str.join(';');
-
             case 'reportTeachTime':
             var timeStr = '';
             if (str.time === 'morning') {
@@ -215,7 +204,7 @@ var Store = {
             if (str === -1) {
                 return '无';
             } else {
-                return (str/100).toFixed(2) + ' 元';
+                return (str/100).toFixed(2);
             }
 
             case 'knowledge/0':
@@ -290,7 +279,7 @@ var Store = {
             case 'score':
             return str.toFixed(1);
             case 'money':
-            return (str/100).toFixed(2) + ' 元';
+            return (str/100).toFixed(2);
             case 'bool':
             return str?'是':'否';
             case 'bool/reverse':
@@ -355,8 +344,8 @@ var Store = {
             {name:'姓名',from:'name'},
             {name:'性别',from:'gender',filter:'radio/gender'},
             {name:'生日',from:'birthday',filter:'onlydate'},
-            {name:'手机',from:'phone'},
-            {name:'身份证号',from:'teacherMessage.idCard'},
+            {name:'手机',from:'phone',stopAuto:true},
+            {name:'身份证号',from:'teacherMessage.idCard',stopAuto:true},
             {name:'家庭地址',from:'position.address'},
             {name:'用户类型',from:'type',filter:'radio/user_type'},
             {name:'用户等级',from:'level'},

@@ -12,7 +12,7 @@ var SectionFeedback = Vue.extend({
                 {name:'用户ID',from:'user._id'},
                 {name:'用户编号',from:'user.userNumber'},
                 {name:'用户姓名',from:'user.name'},
-                {name:'用户手机',from:'user.phone'},
+                {name:'用户手机',from:'user.phone',stopAuto:true},
                 {name:'反馈类型',from:'type',filter:'radio/feedback'},
                 {name:'反馈内容',from:'content'},
                 {name:'提交时间',from:'created_at',filter:'date'},
@@ -29,5 +29,5 @@ var SectionFeedback = Vue.extend({
         }
     },
     template: '<ol class="breadcrumb"><li>消息中心</li><li>{{subtitle}}</li></ol>'+
-                '<div><pagination-table v-if="loaded" :list="list" :header="header" :actions="actions"></pagination-table></div>'
+                '<div><pagination-table v-if="loaded" :list="list" :header="header" :actions="actions" :file-name="subtitle"></pagination-table></div>'
 })

@@ -34,5 +34,5 @@ var SectionTeacher = Vue.extend({
         }
     },
     template: '<ol class="breadcrumb"><li>用户管理</li><li>{{subtitle}}</li></ol>'+
-                '<div><pagination-table v-if="loaded" :list="list" :header="header" :actions="actions"></pagination-table></div>'
+                '<div><pagination-table v-if="loaded" :list="list" :header="header" :actions="actions" :file-name="subtitle"></pagination-table></div>'
 })

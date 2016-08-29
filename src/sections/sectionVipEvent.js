@@ -28,5 +28,5 @@ var SectionVipEvent = Vue.extend({
         }
     },
     template: '<ol class="breadcrumb"><li>会员活动</li><li>会员活动发布情况</li></ol>'+
-                '<div><pagination-table v-if="loaded" :list="list" :header="header" :actions="actions"></pagination-table></div>'
+                '<div><pagination-table v-if="loaded" :list="list" :header="header" :actions="actions" file-name="会员活动发布情况"></pagination-table></div>'
 })

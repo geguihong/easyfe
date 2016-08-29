@@ -13,5 +13,5 @@ var SectionAllUser = Vue.extend({
         return tmp;
     },
     template: '<ol class="breadcrumb"><li>用户管理</li><li>所有用户信息</li></ol>'+
-                '<div><pagination-table v-if="loaded" :list="list" :header="header" :actions="actions"></pagination-table></div>'
+                '<div><pagination-table v-if="loaded" :list="list" :header="header" :actions="actions" file-name="所有用户信息"></pagination-table></div>'
 })

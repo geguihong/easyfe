@@ -12,7 +12,7 @@ var SectionVipEventBook = Vue.extend({
                 {name:'用户ID',from:'user._id'},
                 {name:'用户编号',from:'user.userNumber'},
                 {name:'用户姓名',from:'user.name'},
-                {name:'用户手机',from:'user.phone'},
+                {name:'用户手机',from:'user.phone',stopAuto:true},
                 {name:'下单时间',from:'updated_at',filter:'date'},
                 {name:'支付类型',from:'payType',filter:'radio/pay_type'},
                 {name:'支付额度',from:'COMPUTED/EVENTBOOKPAY'},
@@ -27,5 +27,5 @@ var SectionVipEventBook = Vue.extend({
         }
     },
     template: '<ol class="breadcrumb"><li>会员活动</li><li>会员活动预订情况</li></ol>'+
-                '<div><pagination-table v-if="loaded" :list="list" :header="header" :actions="actions"></pagination-table></div>'
+                '<div><pagination-table v-if="loaded" :list="list" :header="header" :actions="actions" file-name="会员活动预订情况"></pagination-table></div>'
 })

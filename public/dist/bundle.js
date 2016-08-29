@@ -189,17 +189,6 @@ var Store = {
     },
     filter: function(str,type) {
         switch(type) {
-            case 'detail/course_parent':
-            var new_str = [];
-            for (var i = 0;i != str.length;i++) {
-                var tmp_money = (str[i].money/100).toFixed(2)+' 元';
-                var tmp_bool1 = str[i].canGet?'是':'否';
-                var tmp_bool2 = str[i].hasGet?'是':'否';
-                new_str.push('完成课时时间：'+str[i].time+' 分钟 | 积分发放数量：'+str[i].score+' | 现金券发放金额：'+tmp_money
-                    +' | 能否领取：'+tmp_bool1+' | 是否已领取：'+tmp_bool2);
-            }
-            return new_str.join(';');
-
             case 'reportTeachTime':
             var timeStr = '';
             if (str.time === 'morning') {
@@ -215,7 +204,7 @@ var Store = {
             if (str === -1) {
                 return '无';
             } else {
-                return (str/100).toFixed(2) + ' 元';
+                return (str/100).toFixed(2);
             }
 
             case 'knowledge/0':
@@ -290,7 +279,7 @@ var Store = {
             case 'score':
             return str.toFixed(1);
             case 'money':
-            return (str/100).toFixed(2) + ' 元';
+            return (str/100).toFixed(2);
             case 'bool':
             return str?'是':'否';
             case 'bool/reverse':
@@ -355,8 +344,8 @@ var Store = {
             {name:'姓名',from:'name'},
             {name:'性别',from:'gender',filter:'radio/gender'},
             {name:'生日',from:'birthday',filter:'onlydate'},
-            {name:'手机',from:'phone'},
-            {name:'身份证号',from:'teacherMessage.idCard'},
+            {name:'手机',from:'phone',stopAuto:true},
+            {name:'身份证号',from:'teacherMessage.idCard',stopAuto:true},
             {name:'家庭地址',from:'position.address'},
             {name:'用户类型',from:'type',filter:'radio/user_type'},
             {name:'用户等级',from:'level'},
@@ -691,7 +680,7 @@ var orderStatic = Vue.extend({
 Vue.component('order-static', orderStatic);
 //Bookmark:分页表
 var PaginationTable = Vue.extend({
-    props:['list','header','actions'],
+    props:['list','header','actions','fileName'],
     data:function() {
         this.datas = [];
         for(var i=0;i!==this.list.length;i++) {
@@ -749,7 +738,11 @@ var PaginationTable = Vue.extend({
             for (var i = 0; i < arrData.length; i++) {
                 var row = "";
                 for (var index=0;index!==arrData[i].length;index++) {
-                    row += '"'+ arrData[i][index] + '",';
+                    if (header[index].stopAuto) {
+                        row += '"\''+ arrData[i][index] + '",';
+                    } else {
+                        row += '"'+ arrData[i][index] + '",';
+                    }
                 }
                 row = row.slice(0, row.length - 1);
                 CSV += row + '\r\n';
@@ -761,7 +754,7 @@ var PaginationTable = Vue.extend({
             }   
             
             //文件名
-            var fileName = "表格";
+            var fileName = this.fileName;
 
             //初始化文件
             var uri = 'data:text/csv;charset=gb2312,' + $URL.encode(CSV);
@@ -1746,7 +1739,7 @@ var SectionAllUser = Vue.extend({
         return tmp;
     },
     template: '<ol class="breadcrumb"><li>用户管理</li><li>所有用户信息</li></ol>'+
-                '<div><pagination-table v-if="loaded" :list="list" :header="header" :actions="actions"></pagination-table></div>'
+                '<div><pagination-table v-if="loaded" :list="list" :header="header" :actions="actions" file-name="所有用户信息"></pagination-table></div>'
 })
 //route:CreateEvent
 var SectionCreateEvent = Vue.extend({
@@ -1870,7 +1863,7 @@ var SectionFeedback = Vue.extend({
                 {name:'用户ID',from:'user._id'},
                 {name:'用户编号',from:'user.userNumber'},
                 {name:'用户姓名',from:'user.name'},
-                {name:'用户手机',from:'user.phone'},
+                {name:'用户手机',from:'user.phone',stopAuto:true},
                 {name:'反馈类型',from:'type',filter:'radio/feedback'},
                 {name:'反馈内容',from:'content'},
                 {name:'提交时间',from:'created_at',filter:'date'},
@@ -1887,7 +1880,7 @@ var SectionFeedback = Vue.extend({
         }
     },
     template: '<ol class="breadcrumb"><li>消息中心</li><li>{{subtitle}}</li></ol>'+
-                '<div><pagination-table v-if="loaded" :list="list" :header="header" :actions="actions"></pagination-table></div>'
+                '<div><pagination-table v-if="loaded" :list="list" :header="header" :actions="actions" :file-name="subtitle"></pagination-table></div>'
 })
 //route:guideMap
 var SectionGuideMap = Vue.extend({
@@ -2100,11 +2093,11 @@ var SectionOrder = Vue.extend({
             {name:'家长ID',from:'parent._id'},
             {name:'家长编号',from:'parent.userNumber'},
             {name:'家长姓名',from:'parent.name'},
-            {name:'家长手机',from:'parent.phone'},
+            {name:'家长手机',from:'parent.phone',stopAuto:true},
             {name:'家教ID',from:'teacher._id'},
             {name:'家教编号',from:'teacher.userNumber'},
             {name:'家教姓名',from:'teacher.name'},
-            {name:'家教手机',from:'teacher.phone'},
+            {name:'家教手机',from:'teacher.phone',stopAuto:true},
             {name:'年级',from:'grade'},
             {name:'课程',from:'course'},
             {name:'授课日期',from:'teachTime.date'},
@@ -2219,7 +2212,7 @@ var SectionOrder = Vue.extend({
     },
     template: '<ol class="breadcrumb"><li>{{maintitle}}</li><li>{{subtitle}}</li></ol>'+
                 '<order-static></order-static>'+
-                '<div><pagination-table v-if="loaded" :list="list" :header="header" :actions="actions"></pagination-table></div>'
+                '<div><pagination-table v-if="loaded" :list="list" :header="header" :actions="actions" :file-name="subtitle"></pagination-table></div>'
 })
 //route:parent
 var SectionParent = Vue.extend({
@@ -2236,7 +2229,7 @@ var SectionParent = Vue.extend({
         return tmp;
     },
     template: '<ol class="breadcrumb"><li>用户管理</li><li>家长信息</li></ol>'+
-                '<div><pagination-table v-if="loaded" :list="list" :header="header" :actions="actions"></pagination-table></div>'
+                '<div><pagination-table v-if="loaded" :list="list" :header="header" :actions="actions" file-name="家长信息"></pagination-table></div>'
 })
 //route:Paylist
 var SectionPaylist = Vue.extend({
@@ -2254,7 +2247,7 @@ var SectionPaylist = Vue.extend({
                 {name:'付款人ID',from:'user._id'},
                 {name:'付款人编号',from:'user.userNumber'},
                 {name:'付款人姓名',from:'user.name'},
-                {name:'付款人手机',from:'user.phone'},
+                {name:'付款人手机',from:'user.phone',stopAuto:true},
                 {name:'付款金额',from:'COMPUTED/PAYMONEY-TEACHER',filter:'money'},
                 {name:'付款时间',from:'updated_at',filter:'date'},
                 {name:'会员活动编号',from:'vipEvent.vipEventNumber'},
@@ -2262,11 +2255,11 @@ var SectionPaylist = Vue.extend({
                 {name:'家长ID',from:'order.parent._id'},
                 {name:'家长编号',from:'order.parent.userNumber'},
                 {name:'家长姓名',from:'order.parent.name'},
-                {name:'家长手机',from:'order.parent.phone'},
+                {name:'家长手机',from:'order.parent.phone',stopAuto:true},
                 {name:'家教ID',from:'order.teacher._id'},
                 {name:'家教编号',from:'order.teacher.userNumber'},
                 {name:'家教姓名',from:'order.teacher.name'},
-                {name:'家教手机',from:'order.teacher.phone'},
+                {name:'家教手机',from:'order.teacher.phone',stopAuto:true},
                 {name:'订单完成时间（学生完成反馈）',from:'order.reportTime',filter:'date'},
                 {name:'单位价格',from:'order.price',filter:'money'},
                 {name:'交通补贴',from:'order.subsidy',filter:'money'},
@@ -2290,7 +2283,7 @@ var SectionPaylist = Vue.extend({
         }
     },
     template: '<ol class="breadcrumb"><li>消息中心</li><li>{{subtitle}}</li></ol>'+
-                '<div><pagination-table v-if="loaded" :list="list" :header="header" :actions="actions"></pagination-table></div>'
+                '<div><pagination-table v-if="loaded" :list="list" :header="header" :actions="actions" :file-name="subtitle"></pagination-table></div>'
 })
 //route:Paylist
 var SectionReport = Vue.extend({
@@ -2312,11 +2305,11 @@ var SectionReport = Vue.extend({
             {name:'家教ID',from:'teacher._id'},
             {name:'家教编号',from:'teacher.userNumber'},
             {name:'家教姓名',from:'teacher.name'},
-            {name:'家教手机',from:'teacher.phone'},
+            {name:'家教手机',from:'teacher.phone',stopAuto:true},
             {name:'家长ID',from:'parent._id'},
             {name:'家长编号',from:'parent.userNumber'},
             {name:'家长姓名',from:'parent.name'},
-            {name:'家长手机',from:'parent.phone'},
+            {name:'家长手机',from:'parent.phone',stopAuto:true},
             {name:'授课时间',from:'teachTime',filter:'reportTeachTime'},
             {name:'授课科目',from:'course'},
             {name:'完成反馈时间',from:'updated_at',filter:'date'},
@@ -2370,7 +2363,7 @@ var SectionReport = Vue.extend({
         }
     },
     template: '<ol class="breadcrumb"><li>反馈报告</li><li>{{subtitle}}</li></ol>'+
-                '<div><pagination-table v-if="loaded" :list="list" :header="header" :actions="actions"></pagination-table></div>'
+                '<div><pagination-table v-if="loaded" :list="list" :header="header" :actions="actions" :file-name="subtitle"></pagination-table></div>'
 })
 //route:Reward
 var SectionReward = Vue.extend({
@@ -2389,11 +2382,12 @@ var SectionReward = Vue.extend({
             case 'discountOrder':
             api = '/Reward/DiscountOrder';
             key = 'discount';
+            tmp.subtitle = '特价推广奖励';
             tmp.header = [
                 {name:'家教ID',from:'user._id'},
                 {name:'家教编号',from:'user.userNumber'},
                 {name:'家教姓名',from:'user.name'},
-                {name:'家教手机',from:'user.phone'},
+                {name:'家教手机',from:'user.phone',stopAuto:true},
                 {name:'奖励描述',from:'discount.detail'},
                 {name:'奖励金额',from:'discount.money',filter:'money'},
                 {name:'剩余领取次数',from:'discount.count'},
@@ -2403,16 +2397,17 @@ var SectionReward = Vue.extend({
             case 'invite':
             api = '/reward/invite';
             key = 'invitedUsers';
+            tmp.subtitle = '邀请注册奖励';
             tmp.header = [
                 {name:'邀请者类型',from:'invite.type',filter:'radio/user_type'},
                 {name:'邀请者ID',from:'invite._id'},
                 {name:'邀请者编号',from:'invite.userNumber'},
                 {name:'邀请者姓名',from:'invite.name'},
-                {name:'邀请者手机',from:'invite.phone'},
+                {name:'邀请者手机',from:'invite.phone',stopAuto:true},
                 {name:'被邀请人ID',from:'invitedUsers._id'},
                 {name:'被邀请人类型',from:'invitedUsers.type',filter:'radio/user_type'},
                 {name:'被邀请人编号',from:'invitedUsers.userNumber'},
-                {name:'被邀请人手机',from:'invitedUsers.phone'},
+                {name:'被邀请人手机',from:'invitedUsers.phone',stopAuto:true},
                 {name:'被邀请人姓名',from:'invitedUsers.name'},
                 {name:'完成订单数量',from:'invitedUsers.finishOrderCount'},
                 {name:'是否已领取',from:'invitedUsers.isRewardGet',filter:'bool'},
@@ -2420,11 +2415,12 @@ var SectionReward = Vue.extend({
             break;
             case 'course_teacher':
             api = '/reward/course/teacher';
+            tmp.subtitle = '家教完成课时单价增加奖励';
             tmp.header = [
                 {name:'家教ID',from:'teacher._id'},
                 {name:'家教编号',from:'teacher.userNumber'},
                 {name:'家教姓名',from:'teacher.name'},
-                {name:'家教手机',from:'teacher.phone'},
+                {name:'家教手机',from:'teacher.phone',stopAuto:true},
                 {name:'专业能力评分',from:'teacher.teacherMessage.ability',filter:'score'},
                 {name:'宝贝喜爱程度评分',from:'teacher.teacherMessage.childAccept',filter:'score'},
                 {name:'准时态度评分',from:'teacher.teacherMessage.punctualScore',filter:'score'},
@@ -2436,11 +2432,12 @@ var SectionReward = Vue.extend({
             case 'course_parent':
             api = '/reward/course/parent';
             key = 'finishCourseTime';
+            tmp.subtitle = '家长完成课时现金券奖励';
             tmp.header = [
                 {name:'家长ID',from:'user._id'},
                 {name:'家长编号',from:'user.userNumber'},
                 {name:'家长姓名',from:'user.name'},
-                {name:'家长手机',from:'user.phone'},
+                {name:'家长手机',from:'user.phone',stopAuto:true},
                 {name:'总时间',from:'user.parentMessage.finishCourseTime',filter:'min'},
                 {name:'完成课时时间',from:'finishCourseTime.time',filter:'min'},
                 {name:'积分发放数量',from:'finishCourseTime.score'},
@@ -2459,8 +2456,8 @@ var SectionReward = Vue.extend({
             Store.commonGet(api+'?',this,true,key);
         }
     },
-    template: '<ol class="breadcrumb"><li>任务奖励</li></ol>'+
-                '<div><pagination-table v-if="loaded" :list="list" :header="header" :actions="actions"></pagination-table></div>'
+    template: '<ol class="breadcrumb"><li>任务奖励</li><li>{{subtitle}}</li></ol>'+
+                '<div><pagination-table v-if="loaded" :list="list" :header="header" :actions="actions" :file-name="subtitle"></pagination-table></div>'
 })
 //route:sendMessage
 var SectionSendMessage = Vue.extend({
@@ -2551,7 +2548,7 @@ var SectionTeacher = Vue.extend({
         }
     },
     template: '<ol class="breadcrumb"><li>用户管理</li><li>{{subtitle}}</li></ol>'+
-                '<div><pagination-table v-if="loaded" :list="list" :header="header" :actions="actions"></pagination-table></div>'
+                '<div><pagination-table v-if="loaded" :list="list" :header="header" :actions="actions" :file-name="subtitle"></pagination-table></div>'
 })
 
 //route:Event
@@ -2584,7 +2581,7 @@ var SectionVipEvent = Vue.extend({
         }
     },
     template: '<ol class="breadcrumb"><li>会员活动</li><li>会员活动发布情况</li></ol>'+
-                '<div><pagination-table v-if="loaded" :list="list" :header="header" :actions="actions"></pagination-table></div>'
+                '<div><pagination-table v-if="loaded" :list="list" :header="header" :actions="actions" file-name="会员活动发布情况"></pagination-table></div>'
 })
 //route:Book
 var SectionVipEventBook = Vue.extend({
@@ -2600,7 +2597,7 @@ var SectionVipEventBook = Vue.extend({
                 {name:'用户ID',from:'user._id'},
                 {name:'用户编号',from:'user.userNumber'},
                 {name:'用户姓名',from:'user.name'},
-                {name:'用户手机',from:'user.phone'},
+                {name:'用户手机',from:'user.phone',stopAuto:true},
                 {name:'下单时间',from:'updated_at',filter:'date'},
                 {name:'支付类型',from:'payType',filter:'radio/pay_type'},
                 {name:'支付额度',from:'COMPUTED/EVENTBOOKPAY'},
@@ -2615,7 +2612,7 @@ var SectionVipEventBook = Vue.extend({
         }
     },
     template: '<ol class="breadcrumb"><li>会员活动</li><li>会员活动预订情况</li></ol>'+
-                '<div><pagination-table v-if="loaded" :list="list" :header="header" :actions="actions"></pagination-table></div>'
+                '<div><pagination-table v-if="loaded" :list="list" :header="header" :actions="actions" file-name="会员活动预订情况"></pagination-table></div>'
 })
 //route:WithDraw
 var SectionWithdraw = Vue.extend({
@@ -2630,7 +2627,7 @@ var SectionWithdraw = Vue.extend({
             {name:'用户ID',from:'user._id'},
             {name:'用户编号',from:'user.userNumber'},
             {name:'用户姓名',from:'user.name'},
-            {name:'用户手机',from:'user.phone'},
+            {name:'用户手机',from:'user.phone',stopAuto:true},
             {name:'正在申请提现金额',from:'withdraw',filter:'money'},
             {name:'支付方式',from:'COMPUTED/PAYWAY'},
             {name:'最后操作时间',from:'updated_at',filter:'date'},
@@ -2666,7 +2663,7 @@ var SectionWithdraw = Vue.extend({
         }
     },
     template: '<ol class="breadcrumb"><li>我的钱包</li><li>{{subtitle}}</li></ol>'+
-                '<div><pagination-table v-if="loaded" :list="list" :header="header" :actions="actions"></pagination-table></div>'
+                '<div><pagination-table v-if="loaded" :list="list" :header="header" :actions="actions" :file-name="subtitle"></pagination-table></div>'
 })
 //BookMark:全局
 var App = Vue.extend({})

@@ -18,11 +18,11 @@ var SectionReport = Vue.extend({
             {name:'家教ID',from:'teacher._id'},
             {name:'家教编号',from:'teacher.userNumber'},
             {name:'家教姓名',from:'teacher.name'},
-            {name:'家教手机',from:'teacher.phone'},
+            {name:'家教手机',from:'teacher.phone',stopAuto:true},
             {name:'家长ID',from:'parent._id'},
             {name:'家长编号',from:'parent.userNumber'},
             {name:'家长姓名',from:'parent.name'},
-            {name:'家长手机',from:'parent.phone'},
+            {name:'家长手机',from:'parent.phone',stopAuto:true},
             {name:'授课时间',from:'teachTime',filter:'reportTeachTime'},
             {name:'授课科目',from:'course'},
             {name:'完成反馈时间',from:'updated_at',filter:'date'},
@@ -76,5 +76,5 @@ var SectionReport = Vue.extend({
         }
     },
     template: '<ol class="breadcrumb"><li>反馈报告</li><li>{{subtitle}}</li></ol>'+
-                '<div><pagination-table v-if="loaded" :list="list" :header="header" :actions="actions"></pagination-table></div>'
+                '<div><pagination-table v-if="loaded" :list="list" :header="header" :actions="actions" :file-name="subtitle"></pagination-table></div>'
 })

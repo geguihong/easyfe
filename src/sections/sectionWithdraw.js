@@ -11,7 +11,7 @@ var SectionWithdraw = Vue.extend({
             {name:'用户ID',from:'user._id'},
             {name:'用户编号',from:'user.userNumber'},
             {name:'用户姓名',from:'user.name'},
-            {name:'用户手机',from:'user.phone'},
+            {name:'用户手机',from:'user.phone',stopAuto:true},
             {name:'正在申请提现金额',from:'withdraw',filter:'money'},
             {name:'支付方式',from:'COMPUTED/PAYWAY'},
             {name:'最后操作时间',from:'updated_at',filter:'date'},
@@ -47,5 +47,5 @@ var SectionWithdraw = Vue.extend({
         }
     },
     template: '<ol class="breadcrumb"><li>我的钱包</li><li>{{subtitle}}</li></ol>'+
-                '<div><pagination-table v-if="loaded" :list="list" :header="header" :actions="actions"></pagination-table></div>'
+                '<div><pagination-table v-if="loaded" :list="list" :header="header" :actions="actions" :file-name="subtitle"></pagination-table></div>'
 })
