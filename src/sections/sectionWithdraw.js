@@ -18,8 +18,8 @@ var SectionWithdraw = Vue.extend({
             {name:'是否已处理',from: 'state',filter:'bool'}
         ];
         tmp.actions = [{type:'normal',tag:'查看'},
-                {type:'toggle',map:{true:'已处理',false:'未处理'},
-                    arr:[{tag:'已处理',val:true},{tag:'未处理',val:false}],
+                {type:'toggle',map:['未处理','已处理'],
+                    arr:[{tag:'已处理',val:1},{tag:'未处理',val:0}],
                     related:'state',
                     module:'withdraw'}];
 

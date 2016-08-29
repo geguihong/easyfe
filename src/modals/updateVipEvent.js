@@ -54,7 +54,11 @@ var UpdateVipEvent = Vue.extend({
                 if(data.result=='success'){
                     alert('修改成功');
                     $.extend(self.patch,patch_add);
-                    console.log(self.patch);
+                    
+                    // 重置默认值
+                    for (var i=0;i!==self.form.length;i++) {
+                        self.form[i].default = self.models[i];
+                    }
                 }else{
                     alert('修改失败');
                 }

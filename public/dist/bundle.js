@@ -6,6 +6,25 @@ function clone(arr) {
     return b;
 }
 
+Date.prototype.Format = function(fmt)   
+{ //author: meizz   
+  var o = {   
+    "M+" : this.getMonth()+1,                 //月份   
+    "d+" : this.getDate(),                    //日   
+    "h+" : this.getHours(),                   //小时   
+    "m+" : this.getMinutes(),                 //分   
+    "s+" : this.getSeconds(),                 //秒   
+    "q+" : Math.floor((this.getMonth()+3)/3), //季度   
+    "S"  : this.getMilliseconds()             //毫秒   
+  };   
+  if(/(y+)/.test(fmt))   
+    fmt=fmt.replace(RegExp.$1, (this.getFullYear()+"").substr(4 - RegExp.$1.length));   
+  for(var k in o)   
+    if(new RegExp("("+ k +")").test(fmt))   
+  fmt = fmt.replace(RegExp.$1, (RegExp.$1.length==1) ? (o[k]) : (("00"+ o[k]).substr((""+ o[k]).length)));   
+  return fmt;   
+}  
+
 var Store = {
     // api 相关
     rootUrl: '/Web', 
@@ -35,6 +54,33 @@ var Store = {
     // 数据预处理
     getter: function(data,key) {
         switch (key) {
+            case 'COMPUTED/ORDERSTATE':
+            if (data.state === undefined) {
+                return '';
+            }
+
+            var first = ['已预订','待执行','已修改','已完成','已失效'][data.state];
+            var second = '';
+            switch(first) {
+                case '待执行':
+                if (data.isTeacherReport) {
+                    second = '(家教完成课程并反馈)';
+                } else {
+                    second = '(家教未完成课程并反馈)';
+                }
+                break;
+                case '已完成':
+                if (data.hadComment) {
+                    second = '(家长已评价)';
+                } else {
+                    second = '(家长未评价)';
+                }
+                break;
+                case '已修改':
+                second = '(来自'+['已预订','待执行'][data.modifyOriginOrderState]+')';
+                break;
+            }
+            return first + second;
             case 'COMPUTED/EVENTBOOKPAY':
             if (data.vipEvent === undefined) {
                 return '';
@@ -261,8 +307,6 @@ var Store = {
             return ['单次预约','特价订单','多次预约'][str];
             case 'radio/user_type':
             return ['家长/家教','家教','家长'][str];
-            case 'radio/order_state':
-            return ['已预订','待执行','已修改','已完成','已失效'][str];
             case 'radio/gender':
             return ['女','男'][str];
             case 'radio/feedback':
@@ -293,11 +337,11 @@ var Store = {
 
             case 'date':
             var date = new Date(str);
-            return date.getFullYear()+'/'+(date.getMonth()+1)+'/'+date.getDate()+' '+date.getHours()+':'+date.getMinutes()+':'+date.getSeconds();
-            
+            return date.Format("yyyy-MM-dd hh:mm:ss");
+
             case 'onlydate':
             var date = new Date(str);
-            return date.getFullYear()+'/'+(date.getMonth()+1)+'/'+date.getDate();
+            return date.Format("yyyy-MM-dd");
 
             default:
             return str;
@@ -1336,7 +1380,11 @@ var UpdateVipEvent = Vue.extend({
                 if(data.result=='success'){
                     alert('修改成功');
                     $.extend(self.patch,patch_add);
-                    console.log(self.patch);
+                    
+                    // 重置默认值
+                    for (var i=0;i!==self.form.length;i++) {
+                        self.form[i].default = self.models[i];
+                    }
                 }else{
                     alert('修改失败');
                 }
@@ -1488,11 +1536,9 @@ var Wallet = Vue.extend({
                         break;
                         case 2:
                         self.bankName = newVal;
-                        self.original.bankName = newVal;
                         break;
                         case 3:
                         self.bankAccount = newVal;
-                        self.original.bankAccount = newVal;
                         break;
                     }
                 }else{
@@ -2073,7 +2119,7 @@ var SectionOrder = Vue.extend({
             {name:'孩子性别',from:'childGender',filter:'radio/gender'},
             {name:'订单号',from:'orderNumber'},
             {name:'订单类型',from:'type',filter:'radio/order_type'},
-            {name:'订单状态',from:'state',filter:'radio/order_state'},
+            {name:'订单状态',from:'COMPUTED/ORDERSTATE'},
             {name:'保险单号',from:'insurance.insuranceNumber'},
             {name:'下单时间',from:'created_at',filter:'date'},
             {name:'最近修改时间',from:'updated_at',filter:'date'},
@@ -2591,8 +2637,8 @@ var SectionWithdraw = Vue.extend({
             {name:'是否已处理',from: 'state',filter:'bool'}
         ];
         tmp.actions = [{type:'normal',tag:'查看'},
-                {type:'toggle',map:{true:'已处理',false:'未处理'},
-                    arr:[{tag:'已处理',val:true},{tag:'未处理',val:false}],
+                {type:'toggle',map:['未处理','已处理'],
+                    arr:[{tag:'已处理',val:1},{tag:'未处理',val:0}],
                     related:'state',
                     module:'withdraw'}];
 

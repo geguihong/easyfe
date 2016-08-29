@@ -29,7 +29,7 @@ var SectionOrder = Vue.extend({
             {name:'孩子性别',from:'childGender',filter:'radio/gender'},
             {name:'订单号',from:'orderNumber'},
             {name:'订单类型',from:'type',filter:'radio/order_type'},
-            {name:'订单状态',from:'state',filter:'radio/order_state'},
+            {name:'订单状态',from:'COMPUTED/ORDERSTATE'},
             {name:'保险单号',from:'insurance.insuranceNumber'},
             {name:'下单时间',from:'created_at',filter:'date'},
             {name:'最近修改时间',from:'updated_at',filter:'date'},

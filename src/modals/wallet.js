@@ -85,11 +85,9 @@ var Wallet = Vue.extend({
                         break;
                         case 2:
                         self.bankName = newVal;
-                        self.original.bankName = newVal;
                         break;
                         case 3:
                         self.bankAccount = newVal;
-                        self.original.bankAccount = newVal;
                         break;
                     }
                 }else{
