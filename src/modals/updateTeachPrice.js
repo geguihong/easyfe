@@ -8,7 +8,7 @@ var UpdateTeachPrice = Vue.extend({
         };
 
         for (var i = 0; i != tp.length; i++) {
-            var addPrice = [tp[i].addPrice===0?'':(tp[i].addPrice/100).toFixed(2)];
+            var addPrice = tp[i].addPrice===0?'':'(+'+(tp[i].addPrice/100).toFixed(2)+')';
             tmp.form.push({
                 price: (tp[i].price/100).toFixed(2),
                 addPrice: addPrice,

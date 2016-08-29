@@ -306,7 +306,7 @@ var Store = {
             case 'radio/order_type':
             return ['单次预约','特价订单','多次预约'][str];
             case 'radio/user_type':
-            return ['家长/家教','家教','家长'][str];
+            return ['','家教','家长'][str];
             case 'radio/gender':
             return ['女','男'][str];
             case 'radio/feedback':
