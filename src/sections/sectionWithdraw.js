@@ -17,11 +17,10 @@ var SectionWithdraw = Vue.extend({
             {name:'最后操作时间',from:'updated_at',filter:'date'},
             {name:'是否已处理',from: 'state',filter:'bool'}
         ];
-        tmp.actions = [{type:'normal',tag:'查看'},
-                {type:'toggle',map:['未处理','已处理'],
-                    arr:[{tag:'已处理',val:1},{tag:'未处理',val:0}],
-                    related:'state',
-                    module:'withdraw'}];
+        tmp.actions = [{type:'normal',tag:'查看'}];
+        if (this.$route.params['type_id'] === '0'||this.$route.params['type_id'] === '2') {
+            tmp.actions.push({type:'oneway',tag:'确认提现'});
+        }
 
         tmp.subtitle = ['家教未处理提现','家教已处理提现','家长未处理提现','家长已处理提现'][this.$route.params['type_id']];
 

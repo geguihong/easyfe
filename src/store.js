@@ -287,7 +287,7 @@ var Store = {
             case 'bool/discount':
             return str === 1?'是':'否';
             case 'radio/paylist_type':
-            return ['订单','会员活动','充值'][str];
+            return ['订单','会员活动','充值','提现','特价推广奖励','邀请奖励'][str];
             case 'radio/pay_type':
             return ['余额支付','支付宝支付','微信支付','积分支付'][str];
             case 'radio/checkType':

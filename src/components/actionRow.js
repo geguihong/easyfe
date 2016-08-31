@@ -4,33 +4,19 @@ var ActionRow = Vue.extend({
     data: function() {
         var tmp = {};
         tmp.postData = this.getArray(this.preData);
-
-        // 操作有可能隐藏
-        var updateReportActionIndex = -1;
-        for (var i=0;i!==this.actions.length;i++) {
-            if (this.actions[i].tag === '修改专业辅导内容'){
-                updateReportActionIndex = i;
-                break;
-            }
-        }
-        if (updateReportActionIndex !== -1) {
-            if (this.preData.thisTeachDetail === undefined) {
-                tmp.hidden = updateReportActionIndex;
-            }
-        }
-
         return tmp;
     },
     template:'<tr>'+
                 '<td style="max-width:none;overflow:visible;" class="dropup">'+
                     '<template v-for="action in actions">'+
-                        '<button v-if="action.type===\'normal\'&&hidden!==$index" v-on:click="emit(action)" class="btn btn-primary" style="margin-right:10px;">{{action.tag}}</button>'+
+                        '<button v-if="action.type===\'normal\'" v-on:click="emit(action)" class="btn btn-primary" style="margin-right:10px;">{{action.tag}}</button>'+
                         '<div style="display:inline-block;width:auto;margin-right: 10px;" class="input-group-btn" v-if="action.type===\'toggle\'">'+
                             '<button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown">{{action.map[pre(action.related)]}}<span class="caret"></span></button>'+
                                 '<ul class="dropdown-menu">'+
                                     '<li v-for="(index,item) in action.arr" v-on:click="select(action,index)" track-by="$index"><a>{{item.tag}}</a></li>'+
                                 '</ul>'+
                         '</div>'+
+                        '<button v-if="action.type===\'oneway\'&&!preData.state" v-on:click="emit(action)" class="btn btn-primary" style="margin-right:10px;">{{action.tag}}</button>'+
                     '</template>'+
                 '</td>'+
                 '<td title="{{cell}}" v-for="cell in postData" track-by="$index">{{cell}}</td></tr>',
@@ -70,12 +56,6 @@ var ActionRow = Vue.extend({
                 tmp['isShow'] = newVal;
                 break;
 
-                case 'withdraw':
-                api = '/Withdraw';
-                tmp['withdrawId'] = this.preData._id;
-                tmp['state'] = newVal;
-                break;
-
                 case 'report':
                 api = '/Order/Report';
                 tmp['_id'] = this.preData._id;
@@ -107,6 +87,32 @@ var ActionRow = Vue.extend({
         },
         emit: function(event){
             switch(event.tag) {
+                case '确认提现':
+                var tmp = {
+                    token: Store.token,
+                    withdrawId: this.preData._id,
+                    state: 1
+                };
+                var self = this;
+                $.ajax({
+                    url: Store.rootUrl+'/Withdraw',
+                    dataType: 'json',
+                    data:JSON.stringify(tmp),
+                    type:'POST',
+                    contentType: "application/json; charset=utf-8"
+                }).done(function(data, status, jqXHR){
+                    if(data.result=='success'){
+                        alert('执行成功！');
+
+                        self.preData.state = true;
+                        self.postData = self.getArray(self.preData);
+                    }else{
+                        alert('执行失败！');
+                    }
+                }).fail(function(data, status, jqXHR){
+                   alert('服务器请求超时！');
+                });
+                break;
                 case '修改推广单价':
                 Store.showModal('update-order',this.preData,function(patch) {
                     if (patch !== undefined) {
