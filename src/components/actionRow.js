@@ -54,7 +54,7 @@ var ActionRow = Vue.extend({
             switch(action.module) {
                 case 'user':
                 api = '/blacklist';
-                tmp['userId'] = this.preData._id;
+                tmp['_id'] = this.preData._id;
                 tmp['canUse'] = newVal;
                 break;
 

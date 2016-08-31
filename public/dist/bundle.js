@@ -501,7 +501,7 @@ var ActionRow = Vue.extend({
             switch(action.module) {
                 case 'user':
                 api = '/blacklist';
-                tmp['userId'] = this.preData._id;
+                tmp['_id'] = this.preData._id;
                 tmp['canUse'] = newVal;
                 break;
 
@@ -2254,13 +2254,13 @@ var SectionPaylist = Vue.extend({
 
         tmp.header = [
                 {name:'流水类型',from:'buy',filter:'radio/paylist_type'},
-                {name:'付款人类型',from:'user.type',filter:'radio/user_type'},
-                {name:'付款人ID',from:'user._id'},
-                {name:'付款人编号',from:'user.userNumber'},
-                {name:'付款人姓名',from:'user.name'},
-                {name:'付款人手机',from:'user.phone',stopAuto:true},
-                {name:'付款金额',from:'COMPUTED/PAYMONEY-TEACHER',filter:'money'},
-                {name:'付款时间',from:'updated_at',filter:'date'},
+                {name:'用户类型',from:'user.type',filter:'radio/user_type'},
+                {name:'用户ID',from:'user._id'},
+                {name:'用户编号',from:'user.userNumber'},
+                {name:'用户姓名',from:'user.name'},
+                {name:'用户手机',from:'user.phone',stopAuto:true},
+                {name:'交易金额',from:'COMPUTED/PAYMONEY-TEACHER',filter:'money'},
+                {name:'交易时间',from:'updated_at',filter:'date'},
                 {name:'会员活动编号',from:'vipEvent.vipEventNumber'},
                 {name:'订单号',from:'order.orderNumber'},
                 {name:'家长ID',from:'order.parent._id'},
