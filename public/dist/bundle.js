@@ -577,12 +577,16 @@ var ActionRow = Vue.extend({
                 }.bind(this));
                 break;
                 case '修改专业辅导内容':
-                Store.showModal('update-report',this.preData,function(patch) {
-                    for (var key in patch) {
-                        this.preData.thisTeachDetail[key] = patch[key];
-                    }
-                    this.postData = this.getArray(this.preData);
-                }.bind(this));
+                if (this.preData.thisTeachDetail === undefined) {
+                    alert('本次专业辅导情况不存在');
+                } else {
+                    Store.showModal('update-report',this.preData,function(patch) {
+                        for (var key in patch) {
+                            this.preData.thisTeachDetail[key] = patch[key];
+                        }
+                        this.postData = this.getArray(this.preData);
+                    }.bind(this));
+                }
                 break;
                 case '修改授课单价':
                 Store.showModal('update-teach-price',this.preData,function(patch) {
