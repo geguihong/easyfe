@@ -56,7 +56,7 @@ var Store = {
         switch (key) {
             case 'COMPUTED/ORDERSTATE':
             if (data.state === undefined) {
-                return '';
+                return undefined;
             }
 
             var first = ['已预订','待执行','已修改','已完成','已失效'][data.state];
@@ -83,7 +83,7 @@ var Store = {
             return first + second;
             case 'COMPUTED/EVENTBOOKPAY':
             if (data.vipEvent === undefined) {
-                return '';
+                return undefined;
             }
             if (data.payType === 3) {
                 return -data.vipEvent.score+ ' 积分';
@@ -110,8 +110,10 @@ var Store = {
             case 'COMPUTED/SCORE':
                 if (data.teacherMessage !== undefined) {
                     return data.teacherMessage.teachScore;
-                } else {
+                } else if (data.parentMessage !== undefined){
                     return data.parentMessage.score;
+                } else {
+                    return undefined;
                 }
             case 'COMPUTED/EVENTSTATE':
                 if( data.isPublish ) {
@@ -126,26 +128,18 @@ var Store = {
             case 'COMPUTED/ORDERCOUNT':
                 if (data.teacherMessage !== undefined) {
                     return data.finishOrderCount;
-                } else {
+                } else if (data.parentMessage !== undefined) {
                     return data.parentMessage.bookCount;
+                } else {
+                    return undefined;
                 }
             case 'COMPUTED/ORDERTIME':
                 if (data.teacherMessage !== undefined) {
                     return data.teacherMessage.teachTime;
-                } else {
+                } else if (data.parentMessage !== undefined) {
                     return data.parentMessage.finishCourseTime;
-                }
-            case 'COMPUTED/PAYWAY':
-                if (data.way === undefined) {
-                    return '';
-                }
-
-                if (data.way.ali !== undefined) {
-                    return '支付宝账号：'+data.way.ali;
-                } else if (data.way.wechat !== undefined) {
-                    return '微信账号：'+data.way.wechat;
                 } else {
-                    return '银行：'+data.way.bank.name+' 银行卡号：'+data.way.bank.account;
+                    return undefined;
                 }
             case 'COMPUTED/PAYMONEY-PARENT':
                 return -data.money;
@@ -189,6 +183,16 @@ var Store = {
     },
     filter: function(str,type) {
         switch(type) {
+            case 'withdraw_way':
+            if (str.ali !== undefined) {
+                return '支付宝账号：'+str.ali;
+            } else if (str.wechat !== undefined) {
+                return '微信账号：'+str.wechat;
+            } else {
+                return '银行：'+str.bank.name+' 银行卡号：'+str.bank.account;
+            }
+            break;
+
             case 'reportTeachTime':
             var timeStr = '';
             if (str.time === 'morning') {

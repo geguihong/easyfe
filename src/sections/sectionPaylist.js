@@ -18,6 +18,7 @@ var SectionPaylist = Vue.extend({
                 {name:'交易金额',from:'COMPUTED/PAYMONEY-TEACHER',filter:'money'},
                 {name:'交易时间',from:'updated_at',filter:'date'},
                 {name:'支付方式',from:'payType',filter:'radio/pay_type'},
+                {name:'提现渠道',from:'withdraw.way',filter:'withdraw_way'},
                 {name:'会员活动编号',from:'vipEvent.vipEventNumber'},
                 {name:'订单号',from:'order.orderNumber'},
                 {name:'家长ID',from:'order.parent._id'},

@@ -13,7 +13,7 @@ var SectionWithdraw = Vue.extend({
             {name:'用户姓名',from:'user.name'},
             {name:'用户手机',from:'user.phone',stopAuto:true},
             {name:'正在申请提现金额',from:'withdraw',filter:'money'},
-            {name:'支付方式',from:'COMPUTED/PAYWAY'},
+            {name:'提现渠道',from:'way',filter:'withdraw_way'},
             {name:'最后操作时间',from:'updated_at',filter:'date'},
             {name:'是否已处理',from: 'state',filter:'bool'}
         ];
