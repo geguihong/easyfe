@@ -6,7 +6,6 @@ var SectionAllUser = Vue.extend({
         tmp.header = Store.userHeader[0].concat(Store.userHeader[1]).concat(Store.userHeader[2]);
         tmp.actions = [
             {type:'normal',tag:'查看'},
-            {type:'normal',tag:'钱包'},
             {type:'toggle',map:{true:'正常',false:'冻结'},
                 arr:[{tag:'正常',val:true},{tag:'冻结',val:false}],
                 related:'canUse',

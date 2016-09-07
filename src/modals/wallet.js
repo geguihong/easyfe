@@ -1,72 +1,54 @@
 var Wallet = Vue.extend({
     props: ['obj'],
     data: function() {
+        this.patch = {};
+
         var tmp = {
-            balance: '',
-            haveWithdraw: '',
-            withdrawing: '',
-            ali: '',
-            wechat: '',
-            bankName: '',
-            bankAccount: '',
-            vm: ['','','',''],
-            modify: false,
-        };
-        var apiEndpoint = Store.rootUrl+'/user/wallet?token='+Store.token+'&_id='+this.obj._id;
-        $.get({
-            url: apiEndpoint,
-            dataType: 'json',
-        }).done(function(data, status, jqXHR){
-            if(data.result=='success'){
-                tmp.balance = (data.data.balance/100).toFixed(2) + ' 元';
-                tmp.haveWithdraw = (data.data.haveWithdraw/100).toFixed(2) + ' 元';
-                tmp.withdrawing = (data.data.withdrawing/100).toFixed(2) + ' 元';
-                tmp.ali = data.data.ali;
-                tmp.wechat = data.data.wechat;
-                tmp.bankName = data.data.bank.name;
-                tmp.bankAccount = data.data.bank.account;
-            }
-        }).fail(function(data, status, jqXHR){
-            alert('服务器请求超时！');
-        });
+            form: [
+                {name:'支付宝账户',patch_key:'ali',from:'ali',default:this.obj.ali},
+                {name:'微信支付账户',patch_key:'wechat',from:'wechat',default:this.obj.wechat},
+                {name:'银行',patch_key:'bankName',from:'bank.name',default:this.obj.bank.name},
+                {name:'银行卡号',patch_key:'bankAccount',from:'bank.account',default:this.obj.bank.account},
+                ],
+            models: [],
+            submitLock: false
+        }
+
+        for(var i=0;i!=tmp.form.length;i++){
+            tmp.models.push(tmp.form[i].default);
+        }
+
         return tmp;
     },
     methods: {
         exit: function() {
             Store.closeModal();
         },
-        toggle() {
-            this.modify = !this.modify;
-        },
-        submit(index) {
-            var newVal = this.vm[index];
-
+        submit() {
             if (!confirm('确定修改?')) {
                 return;
             }
-            var tmp = {
-                token: Store.token,
-                _id: this.obj._id,
-            };
-            switch(index) {
-                case 0:
-                tmp.ali = newVal;
-                break;
-                case 1:
-                tmp.wechat = newVal;
-                break;
-                case 2:
-                tmp.bank = {};
-                tmp.bank.name = newVal;
-                tmp.bank.account = this.bankAccount;
-                break;
-                case 3:
-                tmp.bank = {};
-                tmp.bank.account = newVal;
-                tmp.bank.name = this.bankName;
-                break;
-            }
 
+            var tmp={};
+            var data={};
+            var patch_add = {};
+            var modified = false;
+
+            for(var i=0;i!=this.form.length;i++){
+                if(this.form[i].default !== this.models[i]) {
+                    data = Store.setter(data,this.form[i].from,this.models[i]);
+                    modified = true;
+                    patch_add[this.form[i].patch_key]=this.models[i];
+                }
+            }
+            
+            tmp.token = Store.token;
+            tmp.data = data;
+            
+            if (!modified) {
+                return;
+            }
+            
             var self = this;
             $.ajax({
                 url: Store.rootUrl+'/user/payway',
@@ -76,19 +58,12 @@ var Wallet = Vue.extend({
                 contentType: "application/json; charset=utf-8"
             }).done(function(data, status, jqXHR){
                 if(data.result=='success'){
-                    switch(index) {
-                        case 0:
-                        self.ali = newVal;
-                        break;
-                        case 1:
-                        self.wechat = newVal;
-                        break;
-                        case 2:
-                        self.bankName = newVal;
-                        break;
-                        case 3:
-                        self.bankAccount = newVal;
-                        break;
+                    alert('修改成功');
+                    $.extend(self.patch,patch_add);
+                    
+                    // 重置默认值
+                    for (var i=0;i!==self.form.length;i++) {
+                        self.form[i].default = self.models[i];
                     }
                 }else{
                     alert('修改失败');
@@ -107,27 +82,20 @@ var Wallet = Vue.extend({
                             '<h4>详情</h4>'+
                         '</div>'+
                         '<div class=\"modal-body\">'+
-                            '<ol class="breadcrumb"><li>钱包信息</li></ol>'+
-                                '<p><strong>余额</strong></p><p>{{balance}}</p>'+
-                                '<p><strong>已提现金额</strong></p><p>{{haveWithdraw}}</p>'+
-                                '<p><strong>正在提现金额</strong></p><p>{{withdrawing}}</p>'+
-                                '<a v-on:click="toggle()">开启修改</a>'+
-                                '<p><strong>支付宝账户</strong></p><p>{{ali}}</p><form class="form-inline" v-if="modify"><input class="form-control" type="text" v-model="vm[0]"><button class="btn btn-default" v-on:click="submit(0)">修改</button></form>'+
-                                '<p><strong>微信支付账户</strong></p><p>{{wechat}}</p><form class="form-inline" v-if="modify"><input class="form-control" type="text" v-model="vm[1]"><button class="btn btn-default" v-on:click="submit(1)">修改</button></form>'+
-                                '<p><strong>银行账户</strong></p>'+
-                                '<p>银行：{{bankName}}</p>'+
-                                '<form class="form-inline" v-if="modify">'+
-                                    '<input class="form-control" type="text" v-model="vm[2]">'+
-                                    '<button class="btn btn-default" v-on:click="submit(2)">修改</button>'+
-                                '</form>'+
-                                '<p>卡号：{{bankAccount}}</p>'+
-                                '<form class="form-inline" v-if="modify">'+
-                                    '<input class="form-control" type="text" v-model="vm[3]">'+
-                                    '<button class="btn btn-default" v-on:click="submit(3)">修改</button>'+
-                                '</form>'+
-                            '</div>'+
+                            '<ol class="breadcrumb"><li>修改钱包信息</li></ol>'+
+                            "<form onSubmit=\"return false;\">\n"+
+                                "<div class=\"form-group\" v-for=\"(key1,item) in form\">\n"+
+                                    "<label>{{item.name}}</label><span :class=\"{hidden:(models[key1]===item.default)}\">*</span>\n"+
+                                    "<template>\n"+
+                                        "<br><input class=\"form-control\" type=\"text\" v-model=\"models[key1]\"/>\n"+
+                                    "</template>\n"+
+                                "</div>\n"+                   
+                                "<safe-lock text=\"解锁修改按钮\"><button class=\"btn btn-default\" v-on:click=\"submit\" :disabled=\"submitLock\">修改</button>\n"+
+                                "<span>（只改动带*号的数据）</span></safe-lock>\n"+
+                            "</form>"+
                         '</div>'+
-                    '</div>',
+                    '</div>'+
+                '</div>'
 })
 
 Vue.component('wallet',Wallet);

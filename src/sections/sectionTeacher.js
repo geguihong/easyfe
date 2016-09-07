@@ -9,7 +9,6 @@ var SectionTeacher = Vue.extend({
         tmp.header = Store.userHeader[0].concat(Store.userHeader[2]);
         tmp.actions = [
             {type:'normal',tag:'查看'},
-            {type:'normal',tag:'钱包'},
             {type:'normal',tag:'修改授课单价'},
             {type:'toggle',map:['未审核','通过','不通过'],
                 arr:[{tag:'未审核',val:0},{tag:'通过',val:1},{tag:'不通过',val:2}],

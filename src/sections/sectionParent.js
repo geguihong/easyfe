@@ -6,7 +6,6 @@ var SectionParent = Vue.extend({
         tmp.header = Store.userHeader[0].concat(Store.userHeader[1]);
         tmp.actions = [
             {type:'normal',tag:'查看'},
-            {type:'normal',tag:'钱包'}
         ];
         
         Store.commonGet('/User?type=1',this,false);

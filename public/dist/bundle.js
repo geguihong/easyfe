@@ -1,4 +1,4 @@
-function clone(arr) {
+   function clone(arr) {
     var b=[]; 
     for(var i=0,l=arr.length;i<l;i++){
         b.push(arr[i]);
@@ -304,6 +304,8 @@ var Store = {
             return ['女','男'][str];
             case 'radio/feedback':
             return ['','需求','应用','投诉'][str];
+            case 'radio/message':
+            return ['','家教','家长','全部'][str];
 
             case 'radio/cancelPerson':
             if (str === 'parent') {
@@ -409,13 +411,7 @@ var Store = {
                     }
                 } else {
                     for(var i in list){
-                        var src = list[i][divide];
-                        list[i][divide] = undefined;
-                        for(var j=0;j!==src.length;j++) {
-                            var copy = $.extend({},list[i],true);
-                            copy[divide] = src[j];
-                            self.list.push(copy);
-                        }
+                        self.list = self.list.concat(divide(list[i]));
                     }
                 }
 
@@ -603,7 +599,18 @@ var ActionRow = Vue.extend({
                 }.bind(this));
                 break;
                 case '钱包':
-                Store.showModal('wallet',this.preData);
+                Store.showModal('wallet',this.preData.way,function(patch) {
+                    for (var key in patch) {
+                        if (key === 'bankName') {
+                            this.preData.way.bank.name = patch[key];
+                        } else if (key === 'bankAccount') {
+                            this.preData.way.bank.account = patch[key];
+                        } else {
+                            this.preData.way[key] = patch[key];
+                        }
+                    }
+                    this.postData = this.getArray(this.preData);
+                }.bind(this));
                 break;
                 case '查看':
                 detailList = [];
@@ -721,7 +728,7 @@ var PaginationTable = Vue.extend({
             "</form>"+
             "<div class=\"table-responsive\">"+
                 "<table class=\"table table-hover\" style=\"margin-top:50px;\">"+
-                    "<thead><tr><th>操作</th><th v-for=\"cell in header\">{{cell.name}}</th></tr></thead>"+
+                    "<thead><tr><th nowrap>操作</th><th nowrap v-for=\"cell in header\">{{cell.name}}</th></tr></thead>"+
                     "<tbody><tr is=\"action-row\" v-for=\"item in pages[currentPage]\" :header=\"header\" :pre-data=\"item\" :actions=\"actions\"></tr></tbody>"+
                 "</table>"+
             "</div>"+
@@ -909,6 +916,9 @@ var SideBar = Vue.extend({
                 items: [{
                     name:'发送消息',
                     href:'/sendMessage',
+                },{
+                    name:'历史消息',
+                    href:'/message',
                 },{
                     name:'所有反馈',
                     href:'/feedback/0',
@@ -1466,72 +1476,54 @@ Vue.component('update-vip-event',UpdateVipEvent);
 var Wallet = Vue.extend({
     props: ['obj'],
     data: function() {
+        this.patch = {};
+
         var tmp = {
-            balance: '',
-            haveWithdraw: '',
-            withdrawing: '',
-            ali: '',
-            wechat: '',
-            bankName: '',
-            bankAccount: '',
-            vm: ['','','',''],
-            modify: false,
-        };
-        var apiEndpoint = Store.rootUrl+'/user/wallet?token='+Store.token+'&_id='+this.obj._id;
-        $.get({
-            url: apiEndpoint,
-            dataType: 'json',
-        }).done(function(data, status, jqXHR){
-            if(data.result=='success'){
-                tmp.balance = (data.data.balance/100).toFixed(2) + ' 元';
-                tmp.haveWithdraw = (data.data.haveWithdraw/100).toFixed(2) + ' 元';
-                tmp.withdrawing = (data.data.withdrawing/100).toFixed(2) + ' 元';
-                tmp.ali = data.data.ali;
-                tmp.wechat = data.data.wechat;
-                tmp.bankName = data.data.bank.name;
-                tmp.bankAccount = data.data.bank.account;
-            }
-        }).fail(function(data, status, jqXHR){
-            alert('服务器请求超时！');
-        });
+            form: [
+                {name:'支付宝账户',patch_key:'ali',from:'ali',default:this.obj.ali},
+                {name:'微信支付账户',patch_key:'wechat',from:'wechat',default:this.obj.wechat},
+                {name:'银行',patch_key:'bankName',from:'bank.name',default:this.obj.bank.name},
+                {name:'银行卡号',patch_key:'bankAccount',from:'bank.account',default:this.obj.bank.account},
+                ],
+            models: [],
+            submitLock: false
+        }
+
+        for(var i=0;i!=tmp.form.length;i++){
+            tmp.models.push(tmp.form[i].default);
+        }
+
         return tmp;
     },
     methods: {
         exit: function() {
             Store.closeModal();
         },
-        toggle() {
-            this.modify = !this.modify;
-        },
-        submit(index) {
-            var newVal = this.vm[index];
-
+        submit() {
             if (!confirm('确定修改?')) {
                 return;
             }
-            var tmp = {
-                token: Store.token,
-                _id: this.obj._id,
-            };
-            switch(index) {
-                case 0:
-                tmp.ali = newVal;
-                break;
-                case 1:
-                tmp.wechat = newVal;
-                break;
-                case 2:
-                tmp.bank = {};
-                tmp.bank.name = newVal;
-                tmp.bank.account = this.bankAccount;
-                break;
-                case 3:
-                tmp.bank = {};
-                tmp.bank.account = newVal;
-                tmp.bank.name = this.bankName;
-                break;
-            }
 
+            var tmp={};
+            var data={};
+            var patch_add = {};
+            var modified = false;
+
+            for(var i=0;i!=this.form.length;i++){
+                if(this.form[i].default !== this.models[i]) {
+                    data = Store.setter(data,this.form[i].from,this.models[i]);
+                    modified = true;
+                    patch_add[this.form[i].patch_key]=this.models[i];
+                }
+            }
+            
+            tmp.token = Store.token;
+            tmp.data = data;
+            
+            if (!modified) {
+                return;
+            }
+            
             var self = this;
             $.ajax({
                 url: Store.rootUrl+'/user/payway',
@@ -1541,19 +1533,12 @@ var Wallet = Vue.extend({
                 contentType: "application/json; charset=utf-8"
             }).done(function(data, status, jqXHR){
                 if(data.result=='success'){
-                    switch(index) {
-                        case 0:
-                        self.ali = newVal;
-                        break;
-                        case 1:
-                        self.wechat = newVal;
-                        break;
-                        case 2:
-                        self.bankName = newVal;
-                        break;
-                        case 3:
-                        self.bankAccount = newVal;
-                        break;
+                    alert('修改成功');
+                    $.extend(self.patch,patch_add);
+                    
+                    // 重置默认值
+                    for (var i=0;i!==self.form.length;i++) {
+                        self.form[i].default = self.models[i];
                     }
                 }else{
                     alert('修改失败');
@@ -1572,27 +1557,20 @@ var Wallet = Vue.extend({
                             '<h4>详情</h4>'+
                         '</div>'+
                         '<div class=\"modal-body\">'+
-                            '<ol class="breadcrumb"><li>钱包信息</li></ol>'+
-                                '<p><strong>余额</strong></p><p>{{balance}}</p>'+
-                                '<p><strong>已提现金额</strong></p><p>{{haveWithdraw}}</p>'+
-                                '<p><strong>正在提现金额</strong></p><p>{{withdrawing}}</p>'+
-                                '<a v-on:click="toggle()">开启修改</a>'+
-                                '<p><strong>支付宝账户</strong></p><p>{{ali}}</p><form class="form-inline" v-if="modify"><input class="form-control" type="text" v-model="vm[0]"><button class="btn btn-default" v-on:click="submit(0)">修改</button></form>'+
-                                '<p><strong>微信支付账户</strong></p><p>{{wechat}}</p><form class="form-inline" v-if="modify"><input class="form-control" type="text" v-model="vm[1]"><button class="btn btn-default" v-on:click="submit(1)">修改</button></form>'+
-                                '<p><strong>银行账户</strong></p>'+
-                                '<p>银行：{{bankName}}</p>'+
-                                '<form class="form-inline" v-if="modify">'+
-                                    '<input class="form-control" type="text" v-model="vm[2]">'+
-                                    '<button class="btn btn-default" v-on:click="submit(2)">修改</button>'+
-                                '</form>'+
-                                '<p>卡号：{{bankAccount}}</p>'+
-                                '<form class="form-inline" v-if="modify">'+
-                                    '<input class="form-control" type="text" v-model="vm[3]">'+
-                                    '<button class="btn btn-default" v-on:click="submit(3)">修改</button>'+
-                                '</form>'+
-                            '</div>'+
+                            '<ol class="breadcrumb"><li>修改钱包信息</li></ol>'+
+                            "<form onSubmit=\"return false;\">\n"+
+                                "<div class=\"form-group\" v-for=\"(key1,item) in form\">\n"+
+                                    "<label>{{item.name}}</label><span :class=\"{hidden:(models[key1]===item.default)}\">*</span>\n"+
+                                    "<template>\n"+
+                                        "<br><input class=\"form-control\" type=\"text\" v-model=\"models[key1]\"/>\n"+
+                                    "</template>\n"+
+                                "</div>\n"+                   
+                                "<safe-lock text=\"解锁修改按钮\"><button class=\"btn btn-default\" v-on:click=\"submit\" :disabled=\"submitLock\">修改</button>\n"+
+                                "<span>（只改动带*号的数据）</span></safe-lock>\n"+
+                            "</form>"+
                         '</div>'+
-                    '</div>',
+                    '</div>'+
+                '</div>'
 })
 
 Vue.component('wallet',Wallet);
@@ -1753,7 +1731,6 @@ var SectionAllUser = Vue.extend({
         tmp.header = Store.userHeader[0].concat(Store.userHeader[1]).concat(Store.userHeader[2]);
         tmp.actions = [
             {type:'normal',tag:'查看'},
-            {type:'normal',tag:'钱包'},
             {type:'toggle',map:{true:'正常',false:'冻结'},
                 arr:[{tag:'正常',val:true},{tag:'冻结',val:false}],
                 related:'canUse',
@@ -1875,37 +1852,27 @@ var SectionCreateEvent = Vue.extend({
     },
 })
 //route:Feedback
-var SectionFeedback = Vue.extend({
-    route: {
-        canReuse: false
-    },
+var SectionMessage = Vue.extend({
     data: function() { 
         var tmp={};
         tmp.loaded = false;
         tmp.header = [
-                {name:'反馈ID',from:'_id'},
-                {name:'用户类型',from:'user.type',filter:'radio/user_type'},
-                {name:'用户ID',from:'user._id'},
-                {name:'用户编号',from:'user.userNumber'},
-                {name:'用户姓名',from:'user.name'},
-                {name:'用户手机',from:'user.phone',stopAuto:true},
-                {name:'反馈类型',from:'type',filter:'radio/feedback'},
-                {name:'反馈内容',from:'content'},
-                {name:'提交时间',from:'created_at',filter:'date'},
+                {name:'发送对象',from:'type',filter:'radio/message'},
+                {name:'内容',from:'content'},
+                {name:'发送时间',from:'created_at',filter:'date'},
         ];
         tmp.actions = [{type:'normal',tag:'查看'}];
-        tmp.subtitle = ['所有反馈','需求反馈','应用反馈','投诉反馈'][this.$route.params['type_id']];
         
-        this.reload(this.$route.params['type_id']);
+        this.reload();
         return tmp;
     },
     methods: {
-        reload: function(type) {
-            Store.commonGet('/feedback?type='+type,this);
+        reload: function() {
+            Store.commonGet('/Message?',this);
         }
     },
-    template: '<ol class="breadcrumb"><li>消息中心</li><li>{{subtitle}}</li></ol>'+
-                '<div><pagination-table v-if="loaded" :list="list" :header="header" :actions="actions" :file-name="subtitle"></pagination-table></div>'
+    template: '<ol class="breadcrumb"><li>消息中心</li><li>历史消息</li></ol>'+
+                '<div><pagination-table v-if="loaded" :list="list" :header="header" :actions="actions" file-name="历史消息"></pagination-table></div>'
 })
 //route:guideMap
 var SectionGuideMap = Vue.extend({
@@ -2009,6 +1976,39 @@ var SectionGuideMap = Vue.extend({
                     "<div class=\"creater\">\n"+
                         "<safe-lock text=\"解锁修改按钮\"><button class=\"btn btn-default\" v-on:click=\"submit()\">提交变更</button><span style=\"color:red;\">（注意：所有变更提交之后才生效）</span></safe-lock>\n"+
                     "</div>",
+})
+//route:Feedback
+var SectionFeedback = Vue.extend({
+    route: {
+        canReuse: false
+    },
+    data: function() { 
+        var tmp={};
+        tmp.loaded = false;
+        tmp.header = [
+                {name:'反馈ID',from:'_id'},
+                {name:'用户类型',from:'user.type',filter:'radio/user_type'},
+                {name:'用户ID',from:'user._id'},
+                {name:'用户编号',from:'user.userNumber'},
+                {name:'用户姓名',from:'user.name'},
+                {name:'用户手机',from:'user.phone',stopAuto:true},
+                {name:'反馈类型',from:'type',filter:'radio/feedback'},
+                {name:'反馈内容',from:'content'},
+                {name:'提交时间',from:'created_at',filter:'date'},
+        ];
+        tmp.actions = [{type:'normal',tag:'查看'}];
+        tmp.subtitle = ['所有反馈','需求反馈','应用反馈','投诉反馈'][this.$route.params['type_id']];
+        
+        this.reload(this.$route.params['type_id']);
+        return tmp;
+    },
+    methods: {
+        reload: function(type) {
+            Store.commonGet('/feedback?type='+type,this);
+        }
+    },
+    template: '<ol class="breadcrumb"><li>消息中心</li><li>{{subtitle}}</li></ol>'+
+                '<div><pagination-table v-if="loaded" :list="list" :header="header" :actions="actions" :file-name="subtitle"></pagination-table></div>'
 })
 //route:onlineParams
 var SectionOnlineParams = Vue.extend({
@@ -2247,7 +2247,6 @@ var SectionParent = Vue.extend({
         tmp.header = Store.userHeader[0].concat(Store.userHeader[1]);
         tmp.actions = [
             {type:'normal',tag:'查看'},
-            {type:'normal',tag:'钱包'}
         ];
         
         Store.commonGet('/User?type=1',this,false);
@@ -2404,11 +2403,24 @@ var SectionReward = Vue.extend({
             actions: []
         };
         var api = '';
-        var key;
+        var fn;
         switch(this.$route.params['type']) {
             case 'discountOrder':
             api = '/Reward/DiscountOrder';
-            key = 'discount';
+            fn = function(obj) {
+                if (obj === undefined) {
+                    return [];
+                }
+                var nList = [];
+                for (var i=0;i!==obj.discount.length;i++) {
+                    if(obj.discount[i].count > 0||obj.discount[i].finishCount > 0) {
+                        var nObj = $.extend({},obj,true);
+                        nObj.discount = obj.discount[i];
+                        nList.push(nObj);
+                    }
+                }
+                return nList;
+            };
             tmp.subtitle = '特价推广奖励';
             tmp.header = [
                 {name:'家教ID',from:'user._id'},
@@ -2423,7 +2435,18 @@ var SectionReward = Vue.extend({
             break;
             case 'invite':
             api = '/reward/invite';
-            key = 'invitedUsers';
+            fn = function(obj) {
+                if (obj === undefined) {
+                    return [];
+                }
+                var nList = [];
+                for (var i=0;i!==obj.invitedUsers.length;i++) {
+                    var nObj = $.extend({},obj,true);
+                    nObj.invitedUsers = obj.invitedUsers[i];
+                    nList.push(nObj);
+                }
+                return nList;
+            };
             tmp.subtitle = '邀请注册奖励';
             tmp.header = [
                 {name:'邀请者类型',from:'invite.type',filter:'radio/user_type'},
@@ -2458,7 +2481,20 @@ var SectionReward = Vue.extend({
             break;
             case 'course_parent':
             api = '/reward/course/parent';
-            key = 'finishCourseTime';
+            fn = function(obj) {
+                if (obj === undefined) {
+                    return [];
+                }
+                var nList = [];
+                for (var i=0;i!==obj.finishCourseTime.length;i++) {
+                    if(obj.finishCourseTime[i].canGet === true||obj.finishCourseTime[i].hasGet === true) {
+                        var nObj = $.extend({},obj,true);
+                        nObj.finishCourseTime = obj.finishCourseTime[i];
+                        nList.push(nObj);
+                    }
+                }
+                return nList;
+            };
             tmp.subtitle = '家长完成课时现金券奖励';
             tmp.header = [
                 {name:'家长ID',from:'user._id'},
@@ -2475,12 +2511,12 @@ var SectionReward = Vue.extend({
             break;
         }
         
-        this.reload(api,key);
+        this.reload(api,fn);
         return tmp;
     },
     methods: {
-        reload: function(api,key) {
-            Store.commonGet(api+'?',this,true,key);
+        reload: function(api,fn) {
+            Store.commonGet(api+'?',this,true,fn);
         }
     },
     template: '<ol class="breadcrumb"><li>任务奖励</li><li>{{subtitle}}</li></ol>'+
@@ -2550,7 +2586,6 @@ var SectionTeacher = Vue.extend({
         tmp.header = Store.userHeader[0].concat(Store.userHeader[2]);
         tmp.actions = [
             {type:'normal',tag:'查看'},
-            {type:'normal',tag:'钱包'},
             {type:'normal',tag:'修改授课单价'},
             {type:'toggle',map:['未审核','通过','不通过'],
                 arr:[{tag:'未审核',val:0},{tag:'通过',val:1},{tag:'不通过',val:2}],
@@ -2717,6 +2752,9 @@ router.map({
             },
             '/onlineParams': {
                 component: SectionOnlineParams
+            },
+            '/message': {
+                component: SectionMessage
             },
             '/feedback/:type_id': {
                 component: SectionFeedback,

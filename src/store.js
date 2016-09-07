@@ -1,4 +1,4 @@
-function clone(arr) {
+   function clone(arr) {
     var b=[]; 
     for(var i=0,l=arr.length;i<l;i++){
         b.push(arr[i]);
@@ -304,6 +304,8 @@ var Store = {
             return ['女','男'][str];
             case 'radio/feedback':
             return ['','需求','应用','投诉'][str];
+            case 'radio/message':
+            return ['','家教','家长','全部'][str];
 
             case 'radio/cancelPerson':
             if (str === 'parent') {
@@ -409,13 +411,7 @@ var Store = {
                     }
                 } else {
                     for(var i in list){
-                        var src = list[i][divide];
-                        list[i][divide] = undefined;
-                        for(var j=0;j!==src.length;j++) {
-                            var copy = $.extend({},list[i],true);
-                            copy[divide] = src[j];
-                            self.list.push(copy);
-                        }
+                        self.list = self.list.concat(divide(list[i]));
                     }
                 }
 

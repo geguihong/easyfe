@@ -25,6 +25,9 @@ router.map({
             '/onlineParams': {
                 component: SectionOnlineParams
             },
+            '/message': {
+                component: SectionMessage
+            },
             '/feedback/:type_id': {
                 component: SectionFeedback,
             },

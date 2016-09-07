@@ -66,6 +66,9 @@ var SideBar = Vue.extend({
                     name:'发送消息',
                     href:'/sendMessage',
                 },{
+                    name:'历史消息',
+                    href:'/message',
+                },{
                     name:'所有反馈',
                     href:'/feedback/0',
                 },{

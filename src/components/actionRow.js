@@ -152,7 +152,18 @@ var ActionRow = Vue.extend({
                 }.bind(this));
                 break;
                 case '钱包':
-                Store.showModal('wallet',this.preData);
+                Store.showModal('wallet',this.preData.way,function(patch) {
+                    for (var key in patch) {
+                        if (key === 'bankName') {
+                            this.preData.way.bank.name = patch[key];
+                        } else if (key === 'bankAccount') {
+                            this.preData.way.bank.account = patch[key];
+                        } else {
+                            this.preData.way[key] = patch[key];
+                        }
+                    }
+                    this.postData = this.getArray(this.preData);
+                }.bind(this));
                 break;
                 case '查看':
                 detailList = [];

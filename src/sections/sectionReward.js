@@ -10,11 +10,24 @@ var SectionReward = Vue.extend({
             actions: []
         };
         var api = '';
-        var key;
+        var fn;
         switch(this.$route.params['type']) {
             case 'discountOrder':
             api = '/Reward/DiscountOrder';
-            key = 'discount';
+            fn = function(obj) {
+                if (obj === undefined) {
+                    return [];
+                }
+                var nList = [];
+                for (var i=0;i!==obj.discount.length;i++) {
+                    if(obj.discount[i].count > 0||obj.discount[i].finishCount > 0) {
+                        var nObj = $.extend({},obj,true);
+                        nObj.discount = obj.discount[i];
+                        nList.push(nObj);
+                    }
+                }
+                return nList;
+            };
             tmp.subtitle = '特价推广奖励';
             tmp.header = [
                 {name:'家教ID',from:'user._id'},
@@ -29,7 +42,18 @@ var SectionReward = Vue.extend({
             break;
             case 'invite':
             api = '/reward/invite';
-            key = 'invitedUsers';
+            fn = function(obj) {
+                if (obj === undefined) {
+                    return [];
+                }
+                var nList = [];
+                for (var i=0;i!==obj.invitedUsers.length;i++) {
+                    var nObj = $.extend({},obj,true);
+                    nObj.invitedUsers = obj.invitedUsers[i];
+                    nList.push(nObj);
+                }
+                return nList;
+            };
             tmp.subtitle = '邀请注册奖励';
             tmp.header = [
                 {name:'邀请者类型',from:'invite.type',filter:'radio/user_type'},
@@ -64,7 +88,20 @@ var SectionReward = Vue.extend({
             break;
             case 'course_parent':
             api = '/reward/course/parent';
-            key = 'finishCourseTime';
+            fn = function(obj) {
+                if (obj === undefined) {
+                    return [];
+                }
+                var nList = [];
+                for (var i=0;i!==obj.finishCourseTime.length;i++) {
+                    if(obj.finishCourseTime[i].canGet === true||obj.finishCourseTime[i].hasGet === true) {
+                        var nObj = $.extend({},obj,true);
+                        nObj.finishCourseTime = obj.finishCourseTime[i];
+                        nList.push(nObj);
+                    }
+                }
+                return nList;
+            };
             tmp.subtitle = '家长完成课时现金券奖励';
             tmp.header = [
                 {name:'家长ID',from:'user._id'},
@@ -81,12 +118,12 @@ var SectionReward = Vue.extend({
             break;
         }
         
-        this.reload(api,key);
+        this.reload(api,fn);
         return tmp;
     },
     methods: {
-        reload: function(api,key) {
-            Store.commonGet(api+'?',this,true,key);
+        reload: function(api,fn) {
+            Store.commonGet(api+'?',this,true,fn);
         }
     },
     template: '<ol class="breadcrumb"><li>任务奖励</li><li>{{subtitle}}</li></ol>'+

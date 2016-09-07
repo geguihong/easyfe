@@ -20,7 +20,7 @@ var PaginationTable = Vue.extend({
             "</form>"+
             "<div class=\"table-responsive\">"+
                 "<table class=\"table table-hover\" style=\"margin-top:50px;\">"+
-                    "<thead><tr><th>操作</th><th v-for=\"cell in header\">{{cell.name}}</th></tr></thead>"+
+                    "<thead><tr><th nowrap>操作</th><th nowrap v-for=\"cell in header\">{{cell.name}}</th></tr></thead>"+
                     "<tbody><tr is=\"action-row\" v-for=\"item in pages[currentPage]\" :header=\"header\" :pre-data=\"item\" :actions=\"actions\"></tr></tbody>"+
                 "</table>"+
             "</div>"+
