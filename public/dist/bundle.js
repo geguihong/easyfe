@@ -2481,10 +2481,10 @@ var SectionReward = Vue.extend({
                 return nList;
             };
             callback = function(obj) {
-                if (obj.invitedUsers.type === 1) {
+                if (obj.invite.type === 1) {
                     obj.money = 500;
-                } else if (obj.invitedUsers.type === 2) {
-                    obj.money = 60000;
+                } else if (obj.invite.type === 2) {
+                    obj.money = 10000;
                 }
             };
             tmp.subtitle = '邀请注册奖励';
