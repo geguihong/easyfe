@@ -58,7 +58,7 @@ var SectionReward = Vue.extend({
                 if (obj.invitedUsers.type === 1) {
                     obj.money = 500;
                 } else if (obj.invitedUsers.type === 2) {
-                    obj.money = 60000;
+                    obj.money = 10000;
                 }
             };
             tmp.subtitle = '邀请注册奖励';
