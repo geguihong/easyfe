@@ -2327,10 +2327,18 @@ var SectionPaylist = Vue.extend({
 
         if (this.$route.params['type'] === 'teacher') {
             tmp.subtitle = '家教流水';
-            this.reload(1);
+            this.reload(1,function(obj) {
+                if (obj.buy === 3||obj.buy === 1) {
+                    obj.money = -obj.money;
+                }
+            });
         } else if (this.$route.params['type'] === 'parent') {
             tmp.subtitle = '家长流水';
-            this.reload(2,function(obj) { if(obj.buy === 0) obj.money = -obj.money; });
+            this.reload(2,function(obj) { 
+                if(obj.buy === 0||obj.buy === 3||obj.buy === 1) {
+                    obj.money = -obj.money;
+                }
+            });
         }
         return tmp;
     },
