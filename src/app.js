@@ -55,6 +55,9 @@ router.map({
             '/report/:type_id': {
                 component: SectionReport,
             },
+            '/money': {
+                component: SectionMoney,
+            },
             '/withdraw/:type_id': {
                 component: SectionWithdraw,
             },

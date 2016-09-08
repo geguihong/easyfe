@@ -15,7 +15,7 @@ var SectionPaylist = Vue.extend({
                 {name:'用户编号',from:'user.userNumber'},
                 {name:'用户姓名',from:'user.name'},
                 {name:'用户手机',from:'user.phone',stopAuto:true},
-                {name:'交易金额',from:'COMPUTED/PAYMONEY-TEACHER',filter:'money'},
+                {name:'交易金额',from:'money',filter:'money'},
                 {name:'交易时间',from:'updated_at',filter:'date'},
                 {name:'支付方式',from:'payType',filter:'radio/pay_type'},
                 {name:'提现渠道',from:'withdraw.way',filter:'withdraw_way'},
@@ -41,14 +41,13 @@ var SectionPaylist = Vue.extend({
             this.reload(1);
         } else if (this.$route.params['type'] === 'parent') {
             tmp.subtitle = '家长流水';
-            tmp.header[6].from = 'COMPUTED/PAYMONEY-PARENT';
-            this.reload(2);
+            this.reload(2,function(obj) { if(obj.buy === 0) obj.money = -obj.money; });
         }
         return tmp;
     },
     methods: {
-        reload: function(type) {
-            Store.commonGet('/Paylist?type='+type,this,true);
+        reload: function(type,fn) {
+            Store.commonGet('/Paylist?type='+type,this,true,undefined,fn);
         }
     },
     template: '<ol class="breadcrumb"><li>消息中心</li><li>{{subtitle}}</li></ol>'+

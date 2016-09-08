@@ -141,14 +141,6 @@ var Store = {
                 } else {
                     return undefined;
                 }
-            case 'COMPUTED/PAYMONEY-PARENT':
-                return -data.money;
-            case 'COMPUTED/PAYMONEY-TEACHER':
-                if (data.buy === 0) {
-                    return data.money;
-                } else {
-                    return -data.money;
-                }
         }
 
         var arr = key.split('.');
@@ -390,7 +382,7 @@ var Store = {
     ]],
 
     // 表格数据获取的 api
-    commonGet: function(url,self,isReturnList,divide) {
+    commonGet: function(url,self,isReturnList,divide,callback) {
         $.ajax({
             url:Store.rootUrl+url+'&token='+Store.token,
             dataType: 'json'
@@ -405,13 +397,21 @@ var Store = {
                 }
 
                 self.list = [];
-                if (divide === undefined) {
+                if (!divide) {
                     for(var i in list){
+                        if (callback) {
+                            callback(list[i]);
+                        }
                         self.list.push(list[i]);
                     }
                 } else {
                     for(var i in list){
-                        self.list = self.list.concat(divide(list[i]));
+                        var tList = divide(list[i]);
+                        if (callback) {
+                            for (var j=0;j!==tList.length;j++)
+                                callback(tList[j]);
+                        }
+                        self.list = self.list.concat(tList);
                     }
                 }
 
@@ -599,14 +599,14 @@ var ActionRow = Vue.extend({
                 }.bind(this));
                 break;
                 case '钱包':
-                Store.showModal('wallet',this.preData.way,function(patch) {
+                Store.showModal('wallet',this.preData,function(patch) {
                     for (var key in patch) {
                         if (key === 'bankName') {
-                            this.preData.way.bank.name = patch[key];
+                            this.preData.bank.name = patch[key];
                         } else if (key === 'bankAccount') {
-                            this.preData.way.bank.account = patch[key];
+                            this.preData.bank.account = patch[key];
                         } else {
-                            this.preData.way[key] = patch[key];
+                            this.preData[key] = patch[key];
                         }
                     }
                     this.postData = this.getArray(this.preData);
@@ -962,6 +962,9 @@ var SideBar = Vue.extend({
                 name: '我的钱包',
                 state: '-',
                 items: [{
+                    name: '钱包信息',
+                    href: '/money'
+                },{
                     name: '家教流水',
                     href: '/paylist/teacher',
                 },{
@@ -1486,7 +1489,8 @@ var Wallet = Vue.extend({
                 {name:'银行卡号',patch_key:'bankAccount',from:'bank.account',default:this.obj.bank.account},
                 ],
             models: [],
-            submitLock: false
+            submitLock: false,
+            patch: {}
         }
 
         for(var i=0;i!=tmp.form.length;i++){
@@ -1497,6 +1501,7 @@ var Wallet = Vue.extend({
     },
     methods: {
         exit: function() {
+            Store.modal.closeFn(this.patch);
             Store.closeModal();
         },
         submit() {
@@ -1511,14 +1516,14 @@ var Wallet = Vue.extend({
 
             for(var i=0;i!=this.form.length;i++){
                 if(this.form[i].default !== this.models[i]) {
-                    data = Store.setter(data,this.form[i].from,this.models[i]);
+                    Store.setter(tmp,this.form[i].from,this.models[i]);
                     modified = true;
                     patch_add[this.form[i].patch_key]=this.models[i];
                 }
             }
             
             tmp.token = Store.token;
-            tmp.data = data;
+            tmp._id = this.obj.user._id;
             
             if (!modified) {
                 return;
@@ -1561,9 +1566,7 @@ var Wallet = Vue.extend({
                             "<form onSubmit=\"return false;\">\n"+
                                 "<div class=\"form-group\" v-for=\"(key1,item) in form\">\n"+
                                     "<label>{{item.name}}</label><span :class=\"{hidden:(models[key1]===item.default)}\">*</span>\n"+
-                                    "<template>\n"+
                                         "<br><input class=\"form-control\" type=\"text\" v-model=\"models[key1]\"/>\n"+
-                                    "</template>\n"+
                                 "</div>\n"+                   
                                 "<safe-lock text=\"解锁修改按钮\"><button class=\"btn btn-default\" v-on:click=\"submit\" :disabled=\"submitLock\">修改</button>\n"+
                                 "<span>（只改动带*号的数据）</span></safe-lock>\n"+
@@ -2010,6 +2013,35 @@ var SectionFeedback = Vue.extend({
     template: '<ol class="breadcrumb"><li>消息中心</li><li>{{subtitle}}</li></ol>'+
                 '<div><pagination-table v-if="loaded" :list="list" :header="header" :actions="actions" :file-name="subtitle"></pagination-table></div>'
 })
+//route:allUser
+var SectionMoney = Vue.extend({
+    data: function() { 
+        var tmp={};
+        tmp.loaded = false;
+        tmp.header = [
+            {name:'用户类型',from:'user.type',filter:'radio/user_type'},
+            {name:'用户ID',from:'user._id'},
+            {name:'用户编号',from:'user.userNumber'},
+            {name:'用户姓名',from:'user.name'},
+            {name:'用户手机',from:'user.phone',stopAuto:true},
+            {name:'已提现',from:'haveWithdraw',filter:'money'},
+            {name:'提现中',from:'withdrawing',filter:'money'},
+            {name:'余额',from:'balance',filter:'money'},
+            {name:'支付宝账户',from:'ali'},
+            {name:'微信支付账户',from:'wechat'},
+            {name:'银行',from:'bank.name'},
+            {name:'银行账户',from:'bank.account'},
+        ];
+        tmp.actions = [{
+            type:'normal',tag:'钱包'
+        }];
+        
+        Store.commonGet('/wallet?',this,false);
+        return tmp;
+    },
+    template: '<ol class="breadcrumb"><li>我的钱包</li><li>钱包信息</li></ol>'+
+                '<div><pagination-table v-if="loaded" :list="list" :header="header" :actions="actions" file-name="钱包信息"></pagination-table></div>'
+})
 //route:onlineParams
 var SectionOnlineParams = Vue.extend({
     methods: {
@@ -2272,7 +2304,7 @@ var SectionPaylist = Vue.extend({
                 {name:'用户编号',from:'user.userNumber'},
                 {name:'用户姓名',from:'user.name'},
                 {name:'用户手机',from:'user.phone',stopAuto:true},
-                {name:'交易金额',from:'COMPUTED/PAYMONEY-TEACHER',filter:'money'},
+                {name:'交易金额',from:'money',filter:'money'},
                 {name:'交易时间',from:'updated_at',filter:'date'},
                 {name:'支付方式',from:'payType',filter:'radio/pay_type'},
                 {name:'提现渠道',from:'withdraw.way',filter:'withdraw_way'},
@@ -2298,14 +2330,13 @@ var SectionPaylist = Vue.extend({
             this.reload(1);
         } else if (this.$route.params['type'] === 'parent') {
             tmp.subtitle = '家长流水';
-            tmp.header[6].from = 'COMPUTED/PAYMONEY-PARENT';
-            this.reload(2);
+            this.reload(2,function(obj) { if(obj.buy === 0) obj.money = -obj.money; });
         }
         return tmp;
     },
     methods: {
-        reload: function(type) {
-            Store.commonGet('/Paylist?type='+type,this,true);
+        reload: function(type,fn) {
+            Store.commonGet('/Paylist?type='+type,this,true,undefined,fn);
         }
     },
     template: '<ol class="breadcrumb"><li>消息中心</li><li>{{subtitle}}</li></ol>'+
@@ -2372,6 +2403,8 @@ var SectionReport = Vue.extend({
             {name:'正确率',from:'rightPercent'},
             {name:'学生本次积极性',from:'enthusiasm'},
             {name:'学生本次吸收程度',from:'getLevel'},
+            {name:'家教评语',from:'teacherComment'},
+            {name:'家长评语',from:'parentComment'},
             {name:'是否已处理',from: 'isProfessionFinish',filter:'bool'}
         ];
         
@@ -2403,7 +2436,7 @@ var SectionReward = Vue.extend({
             actions: []
         };
         var api = '';
-        var fn;
+        var fn,callback;
         switch(this.$route.params['type']) {
             case 'discountOrder':
             api = '/Reward/DiscountOrder';
@@ -2447,6 +2480,13 @@ var SectionReward = Vue.extend({
                 }
                 return nList;
             };
+            callback = function(obj) {
+                if (obj.invitedUsers.type === 1) {
+                    obj.money = 500;
+                } else if (obj.invitedUsers.type === 2) {
+                    obj.money = 60000;
+                }
+            };
             tmp.subtitle = '邀请注册奖励';
             tmp.header = [
                 {name:'邀请者类型',from:'invite.type',filter:'radio/user_type'},
@@ -2460,6 +2500,7 @@ var SectionReward = Vue.extend({
                 {name:'被邀请人手机',from:'invitedUsers.phone',stopAuto:true},
                 {name:'被邀请人姓名',from:'invitedUsers.name'},
                 {name:'完成订单数量',from:'invitedUsers.finishOrderCount'},
+                {name:'奖励金额',from:'money',filter:'money'},
                 {name:'是否已领取',from:'invitedUsers.isRewardGet',filter:'bool'},
             ];
             break;
@@ -2511,12 +2552,12 @@ var SectionReward = Vue.extend({
             break;
         }
         
-        this.reload(api,fn);
+        this.reload(api,fn,callback);
         return tmp;
     },
     methods: {
-        reload: function(api,fn) {
-            Store.commonGet(api+'?',this,true,fn);
+        reload: function(api,fn,callback) {
+            Store.commonGet(api+'?',this,true,fn,callback);
         }
     },
     template: '<ol class="breadcrumb"><li>任务奖励</li><li>{{subtitle}}</li></ol>'+
@@ -2782,6 +2823,9 @@ router.map({
             },
             '/report/:type_id': {
                 component: SectionReport,
+            },
+            '/money': {
+                component: SectionMoney,
             },
             '/withdraw/:type_id': {
                 component: SectionWithdraw,

@@ -111,6 +111,9 @@ var SideBar = Vue.extend({
                 name: '我的钱包',
                 state: '-',
                 items: [{
+                    name: '钱包信息',
+                    href: '/money'
+                },{
                     name: '家教流水',
                     href: '/paylist/teacher',
                 },{

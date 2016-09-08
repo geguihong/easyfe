@@ -10,7 +10,7 @@ var SectionReward = Vue.extend({
             actions: []
         };
         var api = '';
-        var fn;
+        var fn,callback;
         switch(this.$route.params['type']) {
             case 'discountOrder':
             api = '/Reward/DiscountOrder';
@@ -54,6 +54,13 @@ var SectionReward = Vue.extend({
                 }
                 return nList;
             };
+            callback = function(obj) {
+                if (obj.invitedUsers.type === 1) {
+                    obj.money = 500;
+                } else if (obj.invitedUsers.type === 2) {
+                    obj.money = 60000;
+                }
+            };
             tmp.subtitle = '邀请注册奖励';
             tmp.header = [
                 {name:'邀请者类型',from:'invite.type',filter:'radio/user_type'},
@@ -67,6 +74,7 @@ var SectionReward = Vue.extend({
                 {name:'被邀请人手机',from:'invitedUsers.phone',stopAuto:true},
                 {name:'被邀请人姓名',from:'invitedUsers.name'},
                 {name:'完成订单数量',from:'invitedUsers.finishOrderCount'},
+                {name:'奖励金额',from:'money',filter:'money'},
                 {name:'是否已领取',from:'invitedUsers.isRewardGet',filter:'bool'},
             ];
             break;
@@ -118,12 +126,12 @@ var SectionReward = Vue.extend({
             break;
         }
         
-        this.reload(api,fn);
+        this.reload(api,fn,callback);
         return tmp;
     },
     methods: {
-        reload: function(api,fn) {
-            Store.commonGet(api+'?',this,true,fn);
+        reload: function(api,fn,callback) {
+            Store.commonGet(api+'?',this,true,fn,callback);
         }
     },
     template: '<ol class="breadcrumb"><li>任务奖励</li><li>{{subtitle}}</li></ol>'+

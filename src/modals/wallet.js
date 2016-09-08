@@ -11,7 +11,8 @@ var Wallet = Vue.extend({
                 {name:'银行卡号',patch_key:'bankAccount',from:'bank.account',default:this.obj.bank.account},
                 ],
             models: [],
-            submitLock: false
+            submitLock: false,
+            patch: {}
         }
 
         for(var i=0;i!=tmp.form.length;i++){
@@ -22,6 +23,7 @@ var Wallet = Vue.extend({
     },
     methods: {
         exit: function() {
+            Store.modal.closeFn(this.patch);
             Store.closeModal();
         },
         submit() {
@@ -36,14 +38,14 @@ var Wallet = Vue.extend({
 
             for(var i=0;i!=this.form.length;i++){
                 if(this.form[i].default !== this.models[i]) {
-                    data = Store.setter(data,this.form[i].from,this.models[i]);
+                    Store.setter(tmp,this.form[i].from,this.models[i]);
                     modified = true;
                     patch_add[this.form[i].patch_key]=this.models[i];
                 }
             }
             
             tmp.token = Store.token;
-            tmp.data = data;
+            tmp._id = this.obj.user._id;
             
             if (!modified) {
                 return;
@@ -86,9 +88,7 @@ var Wallet = Vue.extend({
                             "<form onSubmit=\"return false;\">\n"+
                                 "<div class=\"form-group\" v-for=\"(key1,item) in form\">\n"+
                                     "<label>{{item.name}}</label><span :class=\"{hidden:(models[key1]===item.default)}\">*</span>\n"+
-                                    "<template>\n"+
                                         "<br><input class=\"form-control\" type=\"text\" v-model=\"models[key1]\"/>\n"+
-                                    "</template>\n"+
                                 "</div>\n"+                   
                                 "<safe-lock text=\"解锁修改按钮\"><button class=\"btn btn-default\" v-on:click=\"submit\" :disabled=\"submitLock\">修改</button>\n"+
                                 "<span>（只改动带*号的数据）</span></safe-lock>\n"+

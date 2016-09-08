@@ -141,14 +141,6 @@ var Store = {
                 } else {
                     return undefined;
                 }
-            case 'COMPUTED/PAYMONEY-PARENT':
-                return -data.money;
-            case 'COMPUTED/PAYMONEY-TEACHER':
-                if (data.buy === 0) {
-                    return data.money;
-                } else {
-                    return -data.money;
-                }
         }
 
         var arr = key.split('.');
@@ -390,7 +382,7 @@ var Store = {
     ]],
 
     // 表格数据获取的 api
-    commonGet: function(url,self,isReturnList,divide) {
+    commonGet: function(url,self,isReturnList,divide,callback) {
         $.ajax({
             url:Store.rootUrl+url+'&token='+Store.token,
             dataType: 'json'
@@ -405,13 +397,21 @@ var Store = {
                 }
 
                 self.list = [];
-                if (divide === undefined) {
+                if (!divide) {
                     for(var i in list){
+                        if (callback) {
+                            callback(list[i]);
+                        }
                         self.list.push(list[i]);
                     }
                 } else {
                     for(var i in list){
-                        self.list = self.list.concat(divide(list[i]));
+                        var tList = divide(list[i]);
+                        if (callback) {
+                            for (var j=0;j!==tList.length;j++)
+                                callback(tList[j]);
+                        }
+                        self.list = self.list.concat(tList);
                     }
                 }
 
