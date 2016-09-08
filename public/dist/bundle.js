@@ -2404,7 +2404,7 @@ var SectionReport = Vue.extend({
             {name:'学生本次积极性',from:'enthusiasm'},
             {name:'学生本次吸收程度',from:'getLevel'},
             {name:'家教评语',from:'teacherComment'},
-            {name:'家长评语',from:'parentComment'},
+            {name:'家长评语',from:'parentComment.content'},
             {name:'是否已处理',from: 'isProfessionFinish',filter:'bool'}
         ];
         
