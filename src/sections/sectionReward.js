@@ -57,7 +57,7 @@ var SectionReward = Vue.extend({
             callback = function(obj) {
                 if (obj.invite.type === 1) {
                     obj.money = 500;
-                } else if (obj.invite.type === 2) {
+                } else if (obj.invite.type === 2&&obj.invitedUsers.type === 2) {
                     obj.money = 10000;
                 }
             };
