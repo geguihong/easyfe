@@ -2454,9 +2454,11 @@ var SectionReward = Vue.extend({
                 }
                 var nList = [];
                 for (var i=0;i!==obj.discount.length;i++) {
-                    var nObj = $.extend({},obj,true);
-                    nObj.discount = obj.discount[i];
-                    nList.push(nObj);
+                    if(obj.discount[i].count > 0||obj.discount[i].finishCount > 0) {
+                        var nObj = $.extend({},obj,true);
+                        nObj.discount = obj.discount[i];
+                        nList.push(nObj);
+                    }
                 }
                 return nList;
             };
