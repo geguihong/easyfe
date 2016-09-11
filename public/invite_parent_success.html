@@ -24,7 +24,7 @@
             <p class="cont">让专业的老师和优秀的家教帮助提高您孩子的成绩</p>
             <p class="cont">Y^O^Y</p>
         <div class="m25"></div>
-        <a class="button">下载 栗智家教 APP</a>
+        <a class="button" id="link">下载 栗智家教 APP</a>
         <div class="m25"></div>
         <div class="ct">
             <a href="javascript:void(0);" id="show-button">活动说明</a>
@@ -46,28 +46,7 @@
             </p>
         </div>
         
-        <script>
-            document.getElementById('show-button').addEventListener('click',function(){
-                document.getElementById('toggle-panel').setAttribute('style',"display:block;");
-            });
-            document.getElementById('hide-button').addEventListener('click',function(){
-                document.getElementById('toggle-panel').setAttribute('style',"display:none;");
-            });
-            
-            function GetRequest() {
-                var url = location.search; //获取url中"?"符后的字串
-                var theRequest = new Object();
-                if (url.indexOf("?") != -1) {
-                    var str = url.substr(1);
-                    strs = str.split("&");
-                    for(var i = 0; i < strs.length; i ++) {
-                        theRequest[strs[i].split("=")[0]] = unescape(strs[i].split("=")[1]);
-                    }
-                }
-                return theRequest;
-            }
-            
-            document.getElementById('phone').innerHTML = GetRequest()['phone'];
-        </script>
+        <script src="/ref/jquery.min.js"></script>
+        <script src="/dist/h5.js"></script>
     </body>
 </html>
