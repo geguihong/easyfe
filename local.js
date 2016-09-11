@@ -8,11 +8,6 @@ app.get('/easyfe/admin/home',function(req,res){
     res.sendFile('/hidden/admin.html',{ root: __dirname });
 });
 
-app.all('/share/*',function(req,res){
-    var url = 'http://121.42.37.233' + req.url;
-    req.pipe(request(url)).pipe(res);
-});
-
 app.all('/Web/*',function(req,res){
     var url = 'http://121.42.37.233' + req.url;
     req.pipe(request(url)).pipe(res);

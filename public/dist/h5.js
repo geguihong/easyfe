@@ -75,23 +75,23 @@ if (window.location.href.indexOf('success') > -1) {
 }
 
 // 根据不同手机设置链接
-if (navigator.userAgent.indexOf('iPhone') > -1) {
-    // 苹果地址
-    $('#link').attr('href','https://itunes.apple.com/app/id1143603116');
-    $('#link').show();
-} else {
-    // 安卓地址
-    $.ajax({
-        url:'/share/OnlineParams?platform=android',
-        dataType: 'json'
-    }).done(function(data, status, jqXHR){
-        if(data.result=="success"){
-            $('#link').attr('href',data.data.update.release.apk_url);
-            $('#link').show();
-        }else{
-            alert('获取下载链接失败');
-        }
-    }).fail(function(data, status, jqXHR){
-        alert('服务器请求超时');
-    });
-}
+// if (navigator.userAgent.indexOf('iPhone') > -1) {
+//     // 苹果地址
+//     $('#link').attr('href','https://itunes.apple.com/app/id1143603116');
+//     $('#link').show();
+// } else {
+//     // 安卓地址
+//     $.ajax({
+//         url:'/share/OnlineParams?platform=android',
+//         dataType: 'json'
+//     }).done(function(data, status, jqXHR){
+//         if(data.result=="success"){
+//             $('#link').attr('href',data.data.update.release.apk_url);
+//             $('#link').show();
+//         }else{
+//             alert('获取下载链接失败');
+//         }
+//     }).fail(function(data, status, jqXHR){
+//         alert('服务器请求超时');
+//     });
+// }

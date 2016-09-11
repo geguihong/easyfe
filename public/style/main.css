@@ -101,6 +101,9 @@ a.button{
 p.cont{
     color:#8C8C8C;
 }
+p.download {
+    font-size:20px;color:#B98542;font-weight:bold;margin-top:20px;
+}
 p.detail-title{
     color:#212D31;
 }
