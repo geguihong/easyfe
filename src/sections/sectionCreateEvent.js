@@ -61,11 +61,15 @@ var SectionCreateEvent = Vue.extend({
                 return;
             }
 
-            if (!/^[1-9][0-9]*$/.test(this.score)) {
+            function isInteger(obj) {
+                return !isNaN(obj) && obj%1 === 0;
+            }
+
+            tmp.score = trim(this.score);
+            if (tmp.score.length===0||!isInteger(this.score)) {
                 alert('积分只能为整数');
                 return;
             }
-            tmp.score = this.score;
 
             if (trim(this.money).length===0||isNaN(this.money)) {
                 alert('金额格式错误');
@@ -73,11 +77,11 @@ var SectionCreateEvent = Vue.extend({
             }
             tmp.money = parseInt(this.money * 100);
 
-            if (!/^[1-9][0-9]*$/.test(this.allowCount)) {
+            tmp.allowCount = trim(this.allowCount);
+            if (tmp.allowCount.length===0||!isInteger(tmp.allowCount)) {
                 alert('人数上限只能为整数');
                 return;
             }
-            tmp.allowCount = this.allowCount;
 
             // 是否接受预订
             tmp.isPublish = this.isPublish;
