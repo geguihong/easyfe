@@ -9,7 +9,7 @@ app.get('/easyfe/admin/home',function(req,res){
 });
 
 app.all('/Web/*',function(req,res){
-    var url = 'http://121.42.37.233' + req.url;
+    var url = 'http://115.28.219.137' + req.url;
     req.pipe(request(url)).pipe(res);
 });
 
